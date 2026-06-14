@@ -5,7 +5,8 @@
   "description": "Football Performance Index (FPI) - a stock market for football players with AI analytics, live pricing, and on-chain trading on Base.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
