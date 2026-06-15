@@ -6,6 +6,7 @@ import { PriceTag } from "@/components/shared/PriceTag";
 import { LivePrice } from "@/components/shared/LivePrice";
 import { Badge } from "@/components/ui/Badge";
 import { PriceChart } from "@/components/market/PriceChart";
+import { PriceDrivers } from "@/components/market/PriceDrivers";
 import { PlayerTabs } from "@/components/market/PlayerTabs";
 import { TradePanel } from "@/components/market/TradePanel";
 import { OrderBook } from "@/components/market/OrderBook";
@@ -72,6 +73,9 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
 
         {/* chart */}
         <PriceChart playerId={player.id} positive={player.priceChangePercent24h >= 0} />
+
+        {/* why is it moving */}
+        <PriceDrivers player={player} />
 
         {/* tabs */}
         <div className="card-surface bg-card p-5">

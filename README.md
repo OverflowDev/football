@@ -32,7 +32,7 @@ tier; every feature (including the AI agents) is free.
 | Charts       | TradingView Lightweight-Charts + Recharts                    |
 | Identity     | Wallet-only — Wagmi + Viem + RainbowKit                       |
 | Contracts    | Solidity (OpenZeppelin) on **Arc**, Hardhat                   |
-| Data feeds   | API-Football (stats) + NewsAPI (news) — optional             |
+| Data feeds   | API-Football (player stats) + NewsAPI (news) + openfootball (free fixtures) |
 
 ---
 
@@ -114,6 +114,44 @@ age-based volatility and a **±20% per-update dampener**. The 30-min cron recomp
 prices and writes `PriceHistory`. **Prices are computed by the platform** (the football
 *data* is external; the *share price* is ours) and pushed on-chain by the oracle signer.
 
+Each player page shows a **Price Drivers** panel ("📈 up 12% because: goal scored,
+transfer links, strong demand") surfacing the same signals the engine uses.
+
+---
+
+## Trading: Spot & Futures
+
+The trade panel has two modes:
+
+- **Spot** — buy/sell actual shares. Sub-toggle for **Virtual** (off-chain virtual
+  balance) or **On-Chain** (USDC on Arc via FootballMarket). 0.5% fee.
+- **Futures** — **virtual leveraged long/short** (1×–10×): margin = notional ÷ leverage,
+  P&L = price move × size, with a computed **liquidation price** and auto-liquidation.
+  Off-chain only. See `lib/futures.ts` (+ client-safe math in `lib/futures-math.ts`),
+  `/api/futures/open|close`, and the Futures Positions table on the Portfolio page.
+
+> On-chain *futures* (real perps settling in USDC) would need a separate derivatives
+> contract — not built. Current futures are virtual.
+
+---
+
+## IPO Center (`/ipo`)
+
+An "Initial Player Offering" hub: **Upcoming** (follow/get notified), **Live** (IPO price,
+shares-sold progress bar, countdown, reserve), and **Recently Listed** (IPO→now gain,
+links to the tradable player). New players fair-launch at a fixed price (default $10) and
+the market reprices from there. Data in `lib/ipo.ts`, served via `/api/ipo`.
+
+---
+
+## Data sources
+
+- **API-Football** (`API_FOOTBALL_KEY`) — per-player goals/assists/ratings for the engine.
+- **NewsAPI** (`NEWS_API_KEY`) — news → sentiment.
+- **openfootball** — **free, no key**: fixtures/results pulled from the public
+  `football.json` GitHub dataset (`lib/openfootball.ts` → `/api/fixtures` → dashboard
+  Fixtures widget). Cached 1h with an offline fallback.
+
 ---
 
 ## AI agents
@@ -174,10 +212,10 @@ verification, frontend wiring) in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 ## Project structure
 
 ```
-app/                     # App Router: (dashboard), api/, docs/, page.tsx (landing)
+app/                     # App Router: (dashboard: dashboard/market/ipo/portfolio/…), api/, docs/, landing
 components/               # ui · shared · layout · market · portfolio · ai · landing · providers
-hooks/                   # useSocket, usePlayer, usePortfolio, useTrade, useAIAgent, useNotifications
-lib/                     # prisma, redis, openai, pricing-engine, data, mock-data, web3, trade, session, …
+hooks/                   # useSocket, usePlayer, usePortfolio, useTrade, useFutures, useAIAgent, useNotifications
+lib/                     # prisma, redis, openai, pricing-engine, futures, ipo, openfootball, oracle, data, web3, …
 store/                   # Zustand global store
 types/                   # shared TypeScript types
 contracts/ scripts/      # Solidity + Hardhat deploy

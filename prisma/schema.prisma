@@ -43,6 +43,17 @@ enum AlertDirection {
   BELOW
 }
 
+enum FuturesSide {
+  LONG
+  SHORT
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+  LIQUIDATED
+}
+
 enum NewsSentiment {
   BULLISH
   BEARISH
@@ -111,6 +122,7 @@ model User {
   notifications Notification[]
   aiChats       AIChat[]
   priceAlerts   PriceAlert[]
+  futures       FuturesPosition[]
 }
 
 // ─────────────────────────────── Club ────────────────────────────────
@@ -165,6 +177,7 @@ model Player {
   watchList    WatchList[]
   notifications Notification[]
   priceAlerts  PriceAlert[]
+  futures      FuturesPosition[]
 
   @@index([position])
   @@index([clubId])
@@ -329,4 +342,30 @@ model NewsItem {
   player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
 
   @@index([playerId, publishedAt])
+}
+
+// ─────────────────────── FuturesPosition ─────────────────────────────
+// Virtual leveraged long/short positions on a player's price.
+
+model FuturesPosition {
+  id               String         @id @default(cuid())
+  userId           String
+  playerId         String
+  side             FuturesSide
+  size             Int            // number of shares (notional units)
+  leverage         Int
+  entryPrice       Decimal        @db.Decimal(18, 2)
+  margin           Decimal        @db.Decimal(18, 2) // collateral locked
+  liquidationPrice Decimal        @db.Decimal(18, 2)
+  fee              Decimal        @default(0) @db.Decimal(18, 2)
+  status           PositionStatus @default(OPEN)
+  closePrice       Decimal?       @db.Decimal(18, 2)
+  realizedPnl      Decimal?       @db.Decimal(18, 2)
+  openedAt         DateTime       @default(now())
+  closedAt         DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
 }

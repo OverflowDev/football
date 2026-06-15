@@ -7,6 +7,7 @@ import {
   Sparkles,
   Settings,
   BookOpen,
+  Rocket,
   type LucideIcon,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Market", href: "/market", icon: TrendingUp },
+  { label: "IPOs", href: "/ipo", icon: Rocket },
   { label: "Portfolio", href: "/portfolio", icon: Wallet },
   { label: "Watchlist", href: "/watchlist", icon: Star },
   { label: "AI Agents", href: "/ai", icon: Sparkles },

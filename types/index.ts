@@ -10,6 +10,9 @@ export type AlertDirection = "ABOVE" | "BELOW";
 export type AgentType = "SCOUT" | "VALUATION" | "PORTFOLIO" | "NEWS";
 export type Sentiment = "BULLISH" | "BEARISH" | "NEUTRAL";
 export type TradeMode = "VIRTUAL" | "ONCHAIN";
+export type TradeKind = "SPOT" | "FUTURES";
+export type FuturesSide = "LONG" | "SHORT";
+export type PositionStatus = "OPEN" | "CLOSED" | "LIQUIDATED";
 export type TimeRange = "1H" | "4H" | "1D" | "1W" | "1M" | "ALL";
 
 export type League =
@@ -208,6 +211,62 @@ export interface TradeResult {
   newBalance?: number;
   newPrice?: number;
   error?: string;
+}
+
+export interface FuturesPosition {
+  id: string;
+  playerId: string;
+  player: Player;
+  side: FuturesSide;
+  size: number; // shares
+  leverage: number;
+  entryPrice: number;
+  markPrice: number; // current price
+  margin: number; // collateral locked
+  liquidationPrice: number;
+  notional: number; // size * entryPrice
+  unrealizedPnl: number;
+  pnlPercent: number; // vs margin
+  status: PositionStatus;
+  openedAt: string;
+}
+
+export interface FuturesOpenRequest {
+  playerId: string;
+  side: FuturesSide;
+  size: number;
+  leverage: number;
+}
+
+export interface FuturesResult {
+  success: boolean;
+  position?: FuturesPosition;
+  newBalance?: number;
+  realizedPnl?: number;
+  error?: string;
+}
+
+export type IpoStatus = "UPCOMING" | "LIVE" | "RECENT";
+
+export interface IpoListing {
+  id: string;
+  name: string;
+  club: string;
+  position: Position;
+  nationalityCode: string;
+  imageUrl: string;
+  status: IpoStatus;
+  ipoPrice: number;
+  // upcoming
+  listingDate?: string;
+  // live
+  sharesTotal?: number;
+  sharesSold?: number;
+  endsAt?: string;
+  // recent — links to a tradable player
+  slug?: string;
+  currentPrice?: number;
+  gainPercent?: number;
 }
 
 export interface MarketStats {

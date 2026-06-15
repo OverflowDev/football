@@ -8,6 +8,7 @@ import { PriceTag } from "@/components/shared/PriceTag";
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { HoldingCard } from "@/components/portfolio/HoldingCard";
 import { TopMovers } from "@/components/market/TopMovers";
+import { FixturesWidget } from "@/components/market/FixturesWidget";
 import { DailyBriefing } from "@/components/ai/DailyBriefing";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useStore } from "@/store";
@@ -105,7 +106,10 @@ export default function DashboardPage() {
             )}
           </div>
         </Card>
-        <DailyBriefing />
+        <div className="space-y-4">
+          <DailyBriefing />
+          <FixturesWidget />
+        </div>
       </div>
     </div>
   );

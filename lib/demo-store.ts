@@ -2,7 +2,7 @@
 // across requests within a running dev server (no DB required).
 
 import { DEMO_HOLDINGS, DEMO_USER, PLAYERS } from "@/lib/mock-data";
-import type { Transaction } from "@/types";
+import type { FuturesSide, PositionStatus, Transaction } from "@/types";
 
 interface DemoHolding {
   playerId: string;
@@ -11,12 +11,27 @@ interface DemoHolding {
   totalInvested: number;
 }
 
+interface DemoFuture {
+  id: string;
+  playerId: string;
+  side: FuturesSide;
+  size: number;
+  leverage: number;
+  entryPrice: number;
+  margin: number;
+  liquidationPrice: number;
+  fee: number;
+  status: PositionStatus;
+  openedAt: string;
+}
+
 const globalForDemo = globalThis as unknown as {
   __fpiDemo?: {
     balance: number;
     holdings: Map<string, DemoHolding>;
     transactions: Transaction[];
     watchlist: Set<string>;
+    futures: DemoFuture[];
   };
 };
 
@@ -35,6 +50,7 @@ function init() {
     holdings,
     transactions: [] as Transaction[],
     watchlist: new Set<string>(["player_2", "player_7", "player_33"]),
+    futures: [] as DemoFuture[],
   };
 }
 
@@ -98,4 +114,55 @@ export function demoApplyTrade(
   };
   state.transactions.unshift(tx);
   return tx;
+}
+
+export function demoOpenFuture(args: {
+  playerId: string;
+  side: FuturesSide;
+  size: number;
+  leverage: number;
+  entryPrice: number;
+  margin: number;
+  liquidationPrice: number;
+  fee: number;
+}): DemoFuture {
+  const state = demoState();
+  state.balance = Math.round((state.balance - args.margin - args.fee) * 100) / 100;
+  const pos: DemoFuture = {
+    id: `fut_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    playerId: args.playerId,
+    side: args.side,
+    size: args.size,
+    leverage: args.leverage,
+    entryPrice: args.entryPrice,
+    margin: args.margin,
+    liquidationPrice: args.liquidationPrice,
+    fee: args.fee,
+    status: "OPEN",
+    openedAt: new Date().toISOString(),
+  };
+  state.futures.unshift(pos);
+  return pos;
+}
+
+export function demoCloseFuture(positionId: string): { realizedPnl: number } | null {
+  const state = demoState();
+  const pos = state.futures.find((f) => f.id === positionId);
+  if (!pos || pos.status !== "OPEN") return null;
+
+  const player = PLAYERS.find((p) => p.id === pos.playerId);
+  const mark = player?.currentPrice ?? pos.entryPrice;
+  const diff = pos.side === "LONG" ? mark - pos.entryPrice : pos.entryPrice - mark;
+  let pnl = Math.round(diff * pos.size * 100) / 100;
+  pnl = Math.max(pnl, -pos.margin);
+
+  const liquidated =
+    (pos.side === "LONG" && mark <= pos.liquidationPrice) ||
+    (pos.side === "SHORT" && mark >= pos.liquidationPrice);
+
+  const payout = liquidated ? 0 : Math.max(0, pos.margin + pnl - pos.fee);
+  state.balance = Math.round((state.balance + payout) * 100) / 100;
+  pos.status = liquidated ? "LIQUIDATED" : "CLOSED";
+
+  return { realizedPnl: liquidated ? -pos.margin : pnl };
 }

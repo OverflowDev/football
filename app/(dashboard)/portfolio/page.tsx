@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { PortfolioSummary } from "@/components/portfolio/PortfolioSummary";
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { TransactionHistory } from "@/components/portfolio/TransactionHistory";
+import { FuturesPositions } from "@/components/portfolio/FuturesPositions";
 import { PriceTag } from "@/components/shared/PriceTag";
 import { LivePrice } from "@/components/shared/LivePrice";
 import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
@@ -109,6 +110,14 @@ export default function PortfolioPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* futures positions */}
+      <div>
+        <h3 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold">
+          Futures Positions
+        </h3>
+        <FuturesPositions />
       </div>
 
       {/* transactions */}

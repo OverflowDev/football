@@ -22,7 +22,8 @@ const TOC = [
   { id: "overview", label: "Overview" },
   { id: "how-it-works", label: "How it works" },
   { id: "pricing", label: "The pricing engine" },
-  { id: "trading", label: "Trading & fees" },
+  { id: "trading", label: "Spot & Futures" },
+  { id: "ipo", label: "IPO Center" },
   { id: "ai", label: "AI agents" },
   { id: "realtime", label: "Live updates" },
   { id: "identity", label: "Wallet identity" },
@@ -52,6 +53,7 @@ const STACK = [
   ["Identity", "Wallet-only — Wagmi + Viem + RainbowKit"],
   ["Chain", "Arc (Circle's EVM L1, gas paid in USDC)"],
   ["Contracts", "Solidity + OpenZeppelin, Hardhat"],
+  ["Data", "API-Football (player stats) + NewsAPI + openfootball (free fixtures)"],
 ];
 
 export default function DocsPage() {
@@ -130,7 +132,9 @@ export default function DocsPage() {
             <Bullets
               items={[
                 "50 players across the top-5 European leagues, each with stats, news and a live price.",
-                "A pro trading UI: candlestick/line charts, order book, watchlists, price alerts and a live ticker.",
+                "Spot trading (virtual or on-chain) plus leveraged Futures (long/short up to 10×).",
+                "An IPO Center where new players list and the market discovers their value.",
+                "A pro trading UI: candlestick/line charts, order book, Price Drivers, watchlists, alerts, live ticker.",
                 "Four AI agents (Scout, Valuation, Portfolio, News) that reason over live platform data.",
                 "On-chain trading on Arc, where USDC is both the settlement currency and the gas token.",
               ]}
@@ -179,18 +183,42 @@ FPI pricing engine  ──►  Postgres (prices, history, portfolios)
             </p>
           </Section>
 
-          <Section id="trading" icon={<Coins className="h-5 w-5 text-gold" />} title="Trading & fees">
-            <p>Two modes share the same trade panel:</p>
+          <Section id="trading" icon={<Coins className="h-5 w-5 text-gold" />} title="Spot & Futures">
+            <p>The trade panel has two modes:</p>
             <Bullets
               items={[
-                "Virtual — instant trades against your £10,000 balance, persisted to your account. Great for learning and the leaderboard.",
-                "On-chain — settles in USDC through the FootballMarket contract on Arc once a wallet is connected.",
+                "Spot — buy/sell actual shares. A sub-toggle picks Virtual (off-chain £10,000 balance) or On-Chain (USDC via the FootballMarket contract on Arc). 0.5% fee.",
+                "Futures — virtual leveraged long/short (1×–10×). Margin = notional ÷ leverage; P&L = price move × size; each position has a liquidation price and is auto-liquidated if the mark crosses it.",
               ]}
             />
             <p>
-              Both charge a <strong>0.5% trading fee</strong>. On-chain, 10% of fees accrue to a
-              dividend pool that top holders can claim monthly (<code>claimDividends()</code>).
-              Large orders show a price-impact warning because they move the bonding curve.
+              On-chain, 10% of fees accrue to a dividend pool top holders claim monthly
+              (<code>claimDividends()</code>). Large orders show a price-impact warning because they
+              move the bonding curve. Open futures positions live on your Portfolio with real-time
+              P&L and a one-click close.
+            </p>
+            <p className="text-sm text-content-secondary">
+              Futures are off-chain (virtual). Real on-chain perps settling in USDC would need a
+              separate derivatives contract — not built yet.
+            </p>
+          </Section>
+
+          <Section id="ipo" icon={<TrendingUp className="h-5 w-5 text-primary" />} title="IPO Center">
+            <p>
+              The <code>/ipo</code> tab is where new players enter the market — an "Initial Player
+              Offering" hub with three rows:
+            </p>
+            <Bullets
+              items={[
+                "Upcoming — players listing soon; follow to get notified at launch.",
+                "Live — currently in their offering window, with IPO price, a shares-sold progress bar, a countdown, and a reserve button.",
+                "Recently Listed — just started trading, showing IPO → current price gain and linking to the player.",
+              ]}
+            />
+            <p>
+              New players fair-launch at a fixed price (default $10) and the market reprices them
+              from there — so a complete unknown and a superstar both start equal and the market
+              decides their value.
             </p>
           </Section>
 
