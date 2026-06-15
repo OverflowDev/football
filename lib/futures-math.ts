@@ -19,22 +19,29 @@ export function positionPnl(side: FuturesSide, entry: number, mark: number, size
   return Math.round(diff * size * 100) / 100;
 }
 
-/** Decorate a raw position with live mark price + P&L for the UI. */
-export function decoratePosition(raw: {
-  id: string;
-  playerId: string;
-  side: FuturesSide;
-  size: number;
-  leverage: number;
-  entryPrice: number;
-  margin: number;
-  liquidationPrice: number;
-  status: FuturesPosition["status"];
-  openedAt: string;
-}): FuturesPosition | null {
+/**
+ * Decorate a raw position with mark price + P&L for the UI. Pass `markPrice`
+ * (from the active data provider — DB in prod) for an accurate live mark;
+ * falls back to the mock player price only when none is supplied.
+ */
+export function decoratePosition(
+  raw: {
+    id: string;
+    playerId: string;
+    side: FuturesSide;
+    size: number;
+    leverage: number;
+    entryPrice: number;
+    margin: number;
+    liquidationPrice: number;
+    status: FuturesPosition["status"];
+    openedAt: string;
+  },
+  markPrice?: number
+): FuturesPosition | null {
   const player = getPlayerById(raw.playerId);
   if (!player) return null;
-  const mark = player.currentPrice;
+  const mark = markPrice ?? player.currentPrice;
   const pnl = positionPnl(raw.side, raw.entryPrice, mark, raw.size);
   const pnlPercent = raw.margin > 0 ? Math.round((pnl / raw.margin) * 10000) / 100 : 0;
   return {

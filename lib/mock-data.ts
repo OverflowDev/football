@@ -48,7 +48,7 @@ function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-function symbolFor(name: string): string {
+export function symbolFor(name: string): string {
   const last = name.split(" ").pop() ?? name;
   return "$" + last.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z]/g, "").slice(0, 9);
 }
@@ -168,6 +168,11 @@ const DEPLOYED_TOKENS: Record<string, { address: string; tokenId: number }> = {
   "erling-haaland": { address: "0x5e52568DD602bf00e9326e6D2B3C31E97649C0cC", tokenId: 4 },
 };
 
+/** Flat list of on-chain player tokens (slug + address) for chain reads. */
+export const DEPLOYED_TOKEN_LIST = Object.entries(DEPLOYED_TOKENS).map(
+  ([slug, v]) => ({ slug, address: v.address, tokenId: v.tokenId })
+);
+
 function buildPlayer(seed: PlayerSeed, index: number): Player {
   const rng = mulberry32(hashString(seed.name) ^ 0x9e3779b9);
   const tierBase = { 1: 90, 2: 60, 3: 35, 4: 18 }[seed.tier] ?? 30;
@@ -248,6 +253,15 @@ export const PLAYERS: Player[] = PLAYER_SEEDS.map(buildPlayer);
 
 const playerBySlug = new Map(PLAYERS.map((p) => [p.slug, p]));
 const playerById = new Map(PLAYERS.map((p) => [p.id, p]));
+
+// nationality -> ISO-2 code, derived from the seed table (for DB-backed rows
+// that only store the nationality string).
+const NATIONALITY_CODES: Record<string, string> = Object.fromEntries(
+  PLAYER_SEEDS.map((s) => [s.nat, s.natCode])
+);
+export function nationalityCodeFor(nationality: string): string {
+  return NATIONALITY_CODES[nationality] ?? "";
+}
 
 export function getAllPlayers(): Player[] {
   return PLAYERS;

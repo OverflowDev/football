@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { useTrade } from "@/hooks/useTrade";
+import { useOnchainTrade } from "@/hooks/useOnchainTrade";
 import { useOpenFuture } from "@/hooks/useFutures";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useStore } from "@/store";
@@ -53,7 +54,9 @@ function SpotForm({ player }: { player: Player }) {
   const price = live?.price ?? player.currentPrice;
   const { data: portfolioData } = usePortfolio();
   const trade = useTrade();
+  const onchain = useOnchainTrade();
   const { isConnected } = useAccount();
+  const authenticated = useStore((s) => s.authenticated);
 
   const shares = Math.max(0, Math.floor(Number(sharesStr) || 0));
   const subtotal = useMemo(() => Math.round(shares * price * 100) / 100, [shares, price]);
@@ -70,13 +73,16 @@ function SpotForm({ player }: { player: Player }) {
   }, [shares, player.sharesAvailable]);
 
   const balanceAfter = side === "BUY" ? cashBalance - totalCost : cashBalance + totalCost;
-  const canAfford = side === "BUY" ? totalCost <= cashBalance : shares <= ownedShares;
+  // virtual balance/holdings only constrain virtual trades; on-chain funds live in the wallet
+  const canAfford = mode === "ONCHAIN" ? true : side === "BUY" ? totalCost <= cashBalance : shares <= ownedShares;
   const validShares = shares > 0;
-  const onChainBlocked = mode === "ONCHAIN" && !isConnected;
+  const needsSignIn = mode === "ONCHAIN" && (!isConnected || !authenticated);
+  const busy = trade.isPending || onchain.pending;
 
   const submit = () => {
-    if (!validShares || !canAfford || onChainBlocked) return;
-    trade.mutate({ playerId: player.id, shares, mode, side });
+    if (!validShares || !canAfford || needsSignIn) return;
+    if (mode === "ONCHAIN") onchain.trade(player.id, side, shares);
+    else trade.mutate({ playerId: player.id, shares, mode, side });
   };
 
   return (
@@ -138,9 +144,10 @@ function SpotForm({ player }: { player: Player }) {
         </div>
       )}
 
-      {onChainBlocked && (
+      {needsSignIn && (
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs text-primary">
-          <Wallet className="h-4 w-4" /> Connect a wallet to trade on-chain.
+          <Wallet className="h-4 w-4" />
+          {!isConnected ? "Connect a wallet to trade on-chain." : "Sign in with your wallet to trade on-chain."}
         </div>
       )}
 
@@ -149,15 +156,15 @@ function SpotForm({ player }: { player: Player }) {
         size="lg"
         variant={side === "BUY" ? "success" : "danger"}
         className="mt-4"
-        loading={trade.isPending}
-        disabled={!validShares || !canAfford || onChainBlocked}
+        loading={busy}
+        disabled={!validShares || !canAfford || needsSignIn}
         onClick={submit}
       >
         {!canAfford && validShares
           ? side === "BUY"
             ? "Insufficient balance"
             : "Not enough shares"
-          : `${side === "BUY" ? "Buy" : "Sell"} ${shares || ""} ${player.symbol}`}
+          : `${mode === "ONCHAIN" ? "On-chain " : ""}${side === "BUY" ? "Buy" : "Sell"} ${shares || ""} ${player.symbol}`}
       </Button>
     </>
   );

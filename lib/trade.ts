@@ -3,11 +3,11 @@
 
 import { hasDatabase } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
-import { getPlayerById } from "@/lib/mock-data";
+import { marketData } from "@/lib/market-data";
 import { demoApplyTrade, demoState } from "@/lib/demo-store";
 import { applyBondingCurve, BONDING_CURVE_STEP } from "@/lib/pricing-engine";
 import { TRADING_FEE_RATE } from "@/lib/utils";
-import type { ApiUser, TradeResult } from "@/types";
+import type { ApiUser, Player, TradeResult } from "@/types";
 
 interface ExecuteArgs {
   user: ApiUser;
@@ -24,7 +24,7 @@ export async function executeTrade({
   side,
   isOnChain,
 }: ExecuteArgs): Promise<TradeResult> {
-  const player = getPlayerById(playerId);
+  const player = await marketData.getPlayerById(playerId);
   if (!player) return { success: false, error: "Player not found" };
   if (shares <= 0) return { success: false, error: "Invalid share quantity" };
 
@@ -68,7 +68,7 @@ export async function executeTrade({
 
 async function executeDbTrade(args: {
   user: ApiUser;
-  player: NonNullable<ReturnType<typeof getPlayerById>>;
+  player: Player;
   shares: number;
   side: "BUY" | "SELL";
   price: number;

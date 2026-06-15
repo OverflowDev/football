@@ -3,7 +3,7 @@
 
 import { hasDatabase } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
-import { getPlayerById } from "@/lib/mock-data";
+import { marketData } from "@/lib/market-data";
 import { demoState, demoOpenFuture, demoCloseFuture } from "@/lib/demo-store";
 import { TRADING_FEE_RATE } from "@/lib/utils";
 import {
@@ -32,7 +32,7 @@ export async function openPosition({
   size,
   leverage,
 }: OpenArgs): Promise<FuturesResult> {
-  const player = getPlayerById(playerId);
+  const player = await marketData.getPlayerById(playerId);
   if (!player) return { success: false, error: "Player not found" };
   if (size <= 0) return { success: false, error: "Invalid size" };
   if (leverage < MIN_LEVERAGE || leverage > MAX_LEVERAGE) {
@@ -116,7 +116,8 @@ export async function closePosition(user: ApiUser, positionId: string): Promise<
         if (!pos || pos.userId !== user.id) throw new Error("Position not found");
         if (pos.status !== "OPEN") throw new Error("Position already closed");
 
-        const player = getPlayerById(pos.playerId);
+        // mark price from the active provider (read before mutating)
+        const player = await marketData.getPlayerById(pos.playerId);
         const mark = player?.currentPrice ?? Number(pos.entryPrice);
         const side = pos.side as FuturesSide;
         const margin = Number(pos.margin);
@@ -161,6 +162,10 @@ export async function closePosition(user: ApiUser, positionId: string): Promise<
 }
 
 export async function listPositions(user: ApiUser): Promise<FuturesPosition[]> {
+  // Live mark prices from the active provider (DB in prod), keyed by playerId.
+  const players = await marketData.getPlayers();
+  const priceById = new Map(players.map((p) => [p.id, p.currentPrice]));
+
   if (hasDatabase && user.id !== "demo-user") {
     const rows = await prisma.futuresPosition.findMany({
       where: { userId: user.id, status: "OPEN" },
@@ -168,24 +173,27 @@ export async function listPositions(user: ApiUser): Promise<FuturesPosition[]> {
     });
     return rows
       .map((r) =>
-        decoratePosition({
-          id: r.id,
-          playerId: r.playerId,
-          side: r.side as FuturesSide,
-          size: r.size,
-          leverage: r.leverage,
-          entryPrice: Number(r.entryPrice),
-          margin: Number(r.margin),
-          liquidationPrice: Number(r.liquidationPrice),
-          status: "OPEN",
-          openedAt: r.openedAt.toISOString(),
-        })
+        decoratePosition(
+          {
+            id: r.id,
+            playerId: r.playerId,
+            side: r.side as FuturesSide,
+            size: r.size,
+            leverage: r.leverage,
+            entryPrice: Number(r.entryPrice),
+            margin: Number(r.margin),
+            liquidationPrice: Number(r.liquidationPrice),
+            status: "OPEN",
+            openedAt: r.openedAt.toISOString(),
+          },
+          priceById.get(r.playerId)
+        )
       )
       .filter((p): p is FuturesPosition => p !== null);
   }
 
   return demoState()
     .futures.filter((f) => f.status === "OPEN")
-    .map((f) => decoratePosition({ ...f }))
+    .map((f) => decoratePosition({ ...f }, priceById.get(f.playerId)))
     .filter((p): p is FuturesPosition => p !== null);
 }

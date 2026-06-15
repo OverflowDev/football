@@ -51,7 +51,12 @@ export async function pushPricesOnChain(
   const market = process.env.NEXT_PUBLIC_FOOTBALL_MARKET_ADDRESS;
 
   if (!pkRaw || !market) {
-    return { pushed: false, count: 0, reason: "ORACLE_PRIVATE_KEY or market address not set" };
+    const reason = "ORACLE_PRIVATE_KEY or market address not set";
+    // In production a missing oracle config is a visible problem, not a quiet skip.
+    if (process.env.NODE_ENV === "production") {
+      console.error(`[oracle] on-chain price push DISABLED — ${reason}`);
+    }
+    return { pushed: false, count: 0, reason };
   }
   if (updates.length === 0) {
     return { pushed: false, count: 0, reason: "no tokenized players to update" };

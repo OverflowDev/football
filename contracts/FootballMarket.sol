@@ -100,10 +100,12 @@ contract FootballMarket is Ownable, AccessControl, ReentrancyGuard {
     error InsufficientShares(uint256 requested, uint256 available);
     error NothingToClaim();
     error InsufficientDividendPool(uint256 requested, uint256 available);
+    error ZeroAddress();
 
     /// @param usdc_     Address of the USDC token (6 decimals).
     /// @param treasury_ Address receiving platform fees.
     constructor(address usdc_, address treasury_) Ownable(msg.sender) {
+        if (usdc_ == address(0) || treasury_ == address(0)) revert ZeroAddress();
         usdc = IERC20(usdc_);
         treasury = treasury_;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -115,6 +117,7 @@ contract FootballMarket is Ownable, AccessControl, ReentrancyGuard {
     /// @notice Update the treasury address that receives platform fees.
     /// @param newTreasury The new treasury address.
     function setTreasury(address newTreasury) external onlyOwner {
+        if (newTreasury == address(0)) revert ZeroAddress();
         treasury = newTreasury;
     }
 

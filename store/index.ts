@@ -27,6 +27,9 @@ interface FPIStore {
   // connected wallet (identity)
   walletAddress: string | null;
   setWalletAddress: (address: string | null) => void;
+  // verified SIWE session present
+  authenticated: boolean;
+  setAuthenticated: (v: boolean) => void;
 
   // notifications
   notifications: NotificationItem[];
@@ -68,6 +71,8 @@ export const useStore = create<FPIStore>((set, get) => ({
 
   walletAddress: null,
   setWalletAddress: (walletAddress) => set({ walletAddress }),
+  authenticated: false,
+  setAuthenticated: (authenticated) => set({ authenticated }),
 
   notifications: [],
   unreadCount: 0,

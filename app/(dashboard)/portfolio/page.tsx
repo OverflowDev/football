@@ -8,6 +8,7 @@ import { PortfolioSummary } from "@/components/portfolio/PortfolioSummary";
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { TransactionHistory } from "@/components/portfolio/TransactionHistory";
 import { FuturesPositions } from "@/components/portfolio/FuturesPositions";
+import { OnChainHoldings } from "@/components/portfolio/OnChainHoldings";
 import { PriceTag } from "@/components/shared/PriceTag";
 import { LivePrice } from "@/components/shared/LivePrice";
 import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
@@ -111,6 +112,9 @@ export default function PortfolioPage() {
           </div>
         )}
       </div>
+
+      {/* on-chain holdings (live from chain) */}
+      <OnChainHoldings />
 
       {/* futures positions */}
       <div>

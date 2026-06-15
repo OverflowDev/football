@@ -246,6 +246,12 @@ export interface FuturesResult {
   error?: string;
 }
 
+export interface OnChainHolding {
+  player: Player;
+  shares: number;
+  currentValue: number;
+}
+
 export type IpoStatus = "UPCOMING" | "LIVE" | "RECENT";
 
 export interface IpoListing {

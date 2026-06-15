@@ -4,6 +4,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Bell, Search, Menu } from "lucide-react";
 import { useStore } from "@/store";
 import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
+import { SignInButton } from "@/components/auth/SignInButton";
 import { DEMO_USER } from "@/lib/mock-data";
 
 export function TopBar() {
@@ -34,6 +35,7 @@ export function TopBar() {
       </button>
 
       <div className="ml-auto flex items-center gap-2">
+        <SignInButton compact />
         <div className="hidden sm:block">
           <ConnectButton
             accountStatus="address"

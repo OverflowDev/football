@@ -3,38 +3,51 @@ import { prisma } from "@/lib/prisma";
 import { hasDatabase } from "@/lib/config";
 import { DEMO_USER } from "@/lib/mock-data";
 import { shortenAddress } from "@/lib/utils";
+import { SESSION_COOKIE, verifySession } from "@/lib/auth-session";
 import type { ApiUser } from "@/types";
 
-export const WALLET_COOKIE = "fpi_wallet";
-
 /**
- * Resolve the current user for API routes / server components.
+ * Resolve the current user from the server-signed `fpi_session` cookie ONLY.
+ * We never trust `document.cookie` or a wallet address from the request body —
+ * identity comes from a verified SIWE signature (see /api/auth/verify).
  *
- * Identity is the connected wallet address, stored in the `fpi_wallet` cookie
- * by the client (see components/providers/WalletSync). With a database, the
- * user is upserted by wallet address; otherwise (or with no wallet connected)
- * a stable demo user is returned so the app is fully usable.
+ * With no valid session the caller is treated as the read-only demo user, so
+ * the app stays browsable, but writes are scoped to a real session.
  */
 export async function getCurrentUser(): Promise<ApiUser> {
-  const wallet = cookies().get(WALLET_COOKIE)?.value?.toLowerCase() || null;
+  const session = verifySession(cookies().get(SESSION_COOKIE)?.value);
 
-  if (!hasDatabase || !wallet) {
-    return { ...DEMO_USER, walletAddress: wallet };
+  if (!session) {
+    return { ...DEMO_USER };
   }
 
-  const user = await prisma.user.upsert({
-    where: { walletAddress: wallet },
-    update: {},
-    create: { walletAddress: wallet, virtualBalance: 10000 },
-  });
+  if (!hasDatabase || session.uid === "demo-user") {
+    return { ...DEMO_USER, walletAddress: session.address };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.uid } });
+  if (!user) return { ...DEMO_USER, walletAddress: session.address };
 
   return {
     id: user.id,
-    name: user.name ?? shortenAddress(wallet),
+    name: user.name ?? shortenAddress(user.walletAddress),
     email: user.email ?? "",
-    image: user.image ?? `https://ui-avatars.com/api/?name=${wallet.slice(2, 4)}&background=6366f1&color=fff`,
+    image: user.image ?? `https://ui-avatars.com/api/?name=${session.address.slice(2, 4)}&background=6366f1&color=fff`,
     walletAddress: user.walletAddress,
     virtualBalance: Number(user.virtualBalance),
     isPremium: false,
   };
+}
+
+/** True when the request carries a valid, non-demo session. */
+export async function isAuthenticated(): Promise<boolean> {
+  const session = verifySession(cookies().get(SESSION_COOKIE)?.value);
+  return !!session && session.uid !== "demo-user";
+}
+
+/** For write routes: returns the user only if truly authenticated, else null. */
+export async function requireUser(): Promise<ApiUser | null> {
+  const session = verifySession(cookies().get(SESSION_COOKIE)?.value);
+  if (!session) return null;
+  return getCurrentUser();
 }
