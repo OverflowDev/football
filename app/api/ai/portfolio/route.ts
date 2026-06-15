@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     2
   )}\nCash balance: £${portfolio.cashBalance.toFixed(2)}\nTotal P&L: £${portfolio.totalPnl.toFixed(
     2
-  )} (${portfolio.totalPnlPercent.toFixed(1)}%)\nHoldings:\n${holdingsStr}\n\n=== MARKET ===\n${marketSummary()}`;
+  )} (${portfolio.totalPnlPercent.toFixed(1)}%)\nHoldings:\n${holdingsStr}\n\n=== MARKET ===\n${await marketSummary()}`;
 
   const fallback =
     `Here's a quick read on your portfolio (total value £${portfolio.totalValue.toFixed(

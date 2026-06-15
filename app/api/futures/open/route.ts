@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/session";
+import { requireWriteUser } from "@/lib/session";
 import { openPosition, MAX_LEVERAGE } from "@/lib/futures";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,10 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  const user = await getCurrentUser();
+  const user = await requireWriteUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Sign in with your wallet to trade" }, { status: 401 });
+  }
   const result = await openPosition({ user, ...parsed.data });
   return NextResponse.json(result, { status: result.success ? 200 : 400 });
 }

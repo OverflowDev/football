@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request", { status: 400 });
   }
 
-  const system = `${SYSTEM}\n\n=== MARKET SUMMARY ===\n${marketSummary()}\n\n=== SCREENED PLAYERS (sorted by upside) ===\n${scoutContext()}`;
+  const system = `${SYSTEM}\n\n=== MARKET SUMMARY ===\n${await marketSummary()}\n\n=== SCREENED PLAYERS (sorted by upside) ===\n${await scoutContext()}`;
 
   const fallback =
     "Based on the current screen, the strongest value candidates are the players trading furthest below their modelled fair value with rising form. Top picks:\n\n" +

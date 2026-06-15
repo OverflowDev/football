@@ -4,7 +4,7 @@ import { hasDatabase } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { getLatestPlayerStats } from "@/lib/football-api";
 import { calculateNewPrice } from "@/lib/pricing-engine";
-import { getAllPlayers } from "@/lib/mock-data";
+import { marketData } from "@/lib/market-data";
 import { pushPricesOnChain, toUsdc6, type OnChainPriceUpdate } from "@/lib/oracle";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,8 @@ export async function GET(req: NextRequest) {
 
   const stats = await getLatestPlayerStats();
   const statsByApiId = new Map(stats.map((s) => [s.apiFootballId, s]));
-  const players = getAllPlayers();
+  // Base prices from the active provider — DB in production so prices compound.
+  const players = await marketData.getPlayers();
   const updates: { id: string; oldPrice: number; newPrice: number; reason: string }[] = [];
   const onChain: OnChainPriceUpdate[] = [];
 

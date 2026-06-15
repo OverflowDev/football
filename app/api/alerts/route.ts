@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/session";
+import { requireWriteUser } from "@/lib/session";
 import { hasDatabase } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 
@@ -13,7 +13,8 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser();
+  const user = await requireWriteUser();
+  if (!user) return NextResponse.json({ error: "Sign in to set price alerts" }, { status: 401 });
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });

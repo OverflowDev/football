@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/session";
+import { requireWriteUser } from "@/lib/session";
 import { executeTrade } from "@/lib/trade";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const user = await getCurrentUser();
+  const user = await requireWriteUser();
+  if (!user) {
+    return NextResponse.json({ success: false, error: "Sign in with your wallet to trade" }, { status: 401 });
+  }
   const result = await executeTrade({
     user,
     playerId: parsed.data.playerId,

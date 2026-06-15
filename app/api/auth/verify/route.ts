@@ -30,6 +30,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Malformed message" }, { status: 400 });
   }
 
+  // Bind the signed message to THIS site: domain + URI host must match the
+  // request, and the chain must be one we support. Prevents a signature
+  // harvested for another dApp/domain being replayed here.
+  const host = req.headers.get("host");
+  if (!host || fields.domain !== host) {
+    return NextResponse.json({ error: "Domain mismatch" }, { status: 401 });
+  }
+  try {
+    if (new URL(fields.uri).host !== host) {
+      return NextResponse.json({ error: "URI mismatch" }, { status: 401 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Invalid URI" }, { status: 401 });
+  }
+  const SUPPORTED_CHAINS = [Number(process.env.ARC_CHAIN_ID || 5042002), 8453, 84532];
+  if (!SUPPORTED_CHAINS.includes(fields.chainId)) {
+    return NextResponse.json({ error: "Unsupported chain" }, { status: 401 });
+  }
+
   // nonce must match the one we issued (httpOnly cookie)
   const cookieNonce = req.cookies.get(NONCE_COOKIE)?.value;
   if (!cookieNonce || cookieNonce !== fields.nonce) {

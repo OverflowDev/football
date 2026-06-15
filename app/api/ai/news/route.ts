@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return new Response("Invalid request", { status: 400 });
 
-  const system = `${SYSTEM}\n\n=== TODAY'S FOOTBALL NEWS ===\n${newsContext()}`;
+  const system = `${SYSTEM}\n\n=== TODAY'S FOOTBALL NEWS ===\n${await newsContext()}`;
 
   const fallback =
     "📰 FPI Daily Briefing\n\n" +

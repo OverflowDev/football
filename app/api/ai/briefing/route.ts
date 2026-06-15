@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getOpenAI, OPENAI_MODEL } from "@/lib/openai";
 import { marketSummary, newsContext } from "@/lib/ai-context";
-import { getAllPlayers } from "@/lib/mock-data";
+import { marketData } from "@/lib/market-data";
 
 export const dynamic = "force-dynamic";
 
 /** Auto-generated morning market summary for the dashboard. */
 export async function GET() {
-  const players = getAllPlayers();
+  const players = await marketData.getPlayers();
   const topGainer = [...players].sort(
     (a, b) => b.priceChangePercent24h - a.priceChangePercent24h
   )[0];
@@ -15,7 +15,7 @@ export async function GET() {
     (a, b) => a.priceChangePercent24h - b.priceChangePercent24h
   )[0];
 
-  const fallback = `Good morning. ${marketSummary()} ${topGainer.name} (${topGainer.symbol}) leads the board at ${topGainer.priceChangePercent24h > 0 ? "+" : ""}${topGainer.priceChangePercent24h}%, while ${topLoser.name} (${topLoser.symbol}) lags at ${topLoser.priceChangePercent24h}%. Transfer rumors and weekend form are the main price drivers today — watch undervalued names with rising form.`;
+  const fallback = `Good morning. ${await marketSummary()} ${topGainer.name} (${topGainer.symbol}) leads the board at ${topGainer.priceChangePercent24h > 0 ? "+" : ""}${topGainer.priceChangePercent24h}%, while ${topLoser.name} (${topLoser.symbol}) lags at ${topLoser.priceChangePercent24h}%. Transfer rumors and weekend form are the main price drivers today — watch undervalued names with rising form.`;
 
   const openai = getOpenAI();
   if (!openai) {
@@ -34,7 +34,7 @@ export async function GET() {
         },
         {
           role: "user",
-          content: `Market: ${marketSummary()}\n\nNews:\n${newsContext()}`,
+          content: `Market: ${await marketSummary()}\n\nNews:\n${await newsContext()}`,
         },
       ],
     });

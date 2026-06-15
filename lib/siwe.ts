@@ -30,18 +30,33 @@ export function buildSiweMessage(f: SiweFields): string {
 }
 
 export interface ParsedSiwe {
+  domain: string;
   address: string;
+  uri: string;
+  chainId: number;
   nonce: string;
   expirationTime: string;
 }
 
 export function parseSiweMessage(message: string): ParsedSiwe | null {
   const lines = message.split("\n");
+  const domain = lines[0]?.match(/^(.+) wants you to sign in with your Ethereum account:$/)?.[1]?.trim();
   const address = lines[1]?.trim();
+  const uri = message.match(/^URI: (.+)$/m)?.[1]?.trim();
+  const chainIdRaw = message.match(/^Chain ID: (\d+)$/m)?.[1];
   const nonce = message.match(/^Nonce: (.+)$/m)?.[1]?.trim();
   const expirationTime = message.match(/^Expiration Time: (.+)$/m)?.[1]?.trim();
-  if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address) || !nonce || !expirationTime) {
+
+  if (
+    !domain ||
+    !address ||
+    !/^0x[a-fA-F0-9]{40}$/.test(address) ||
+    !uri ||
+    !chainIdRaw ||
+    !nonce ||
+    !expirationTime
+  ) {
     return null;
   }
-  return { address, nonce, expirationTime };
+  return { domain, address, uri, chainId: Number(chainIdRaw), nonce, expirationTime };
 }

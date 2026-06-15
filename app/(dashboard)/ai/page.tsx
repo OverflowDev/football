@@ -19,15 +19,6 @@ export default function AIHubPage() {
       </div>
 
       <AgentSelector />
-
-      <div className="card-surface bg-card p-5 text-sm text-content-secondary">
-        <p>
-          Agents stream responses from OpenAI (<code className="text-content">gpt-4o</code>),
-          injecting current prices, fair values, form and news into every prompt. Set{" "}
-          <code className="text-content">OPENAI_API_KEY</code> to enable live reasoning — otherwise a
-          grounded demo response is streamed.
-        </p>
-      </div>
     </div>
   );
 }

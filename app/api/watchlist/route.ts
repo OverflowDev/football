@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, requireWriteUser } from "@/lib/session";
 import { hasDatabase } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { demoState } from "@/lib/demo-store";
@@ -28,7 +28,8 @@ const mutateSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser();
+  const user = await requireWriteUser();
+  if (!user) return NextResponse.json({ error: "Sign in to manage your watchlist" }, { status: 401 });
   const parsed = mutateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
@@ -48,7 +49,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const user = await getCurrentUser();
+  const user = await requireWriteUser();
+  if (!user) return NextResponse.json({ error: "Sign in to manage your watchlist" }, { status: 401 });
   const parsed = mutateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });

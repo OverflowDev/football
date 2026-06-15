@@ -250,7 +250,7 @@ model Transaction {
   totalAmount   Decimal         @db.Decimal(18, 2)
   fee           Decimal         @db.Decimal(18, 2)
   isOnChain     Boolean         @default(false)
-  txHash        String?
+  txHash        String?         @unique
   createdAt     DateTime        @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

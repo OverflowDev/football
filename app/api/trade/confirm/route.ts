@@ -58,19 +58,37 @@ export async function POST(req: NextRequest) {
   // live from the chain (see lib/onchain-portfolio). This avoids virtual/chain
   // state drift.
   if (hasDatabase && user.id !== "demo-user") {
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        playerId: player.id,
-        type: parsed.data.side,
+    // Replay protection: a given txHash can only be recorded once. If we've
+    // already seen it, return idempotently instead of duplicating history.
+    const existing = await prisma.transaction.findUnique({
+      where: { txHash: result.txHash },
+    });
+    if (existing) {
+      return NextResponse.json({
+        success: true,
+        alreadyRecorded: true,
+        txHash: result.txHash,
         shares,
         pricePerShare: price,
-        totalAmount: total,
+        total,
         fee,
-        isOnChain: true,
-        txHash: result.txHash,
-      },
-    }).catch(() => null);
+      });
+    }
+    await prisma.transaction
+      .create({
+        data: {
+          userId: user.id,
+          playerId: player.id,
+          type: parsed.data.side,
+          shares,
+          pricePerShare: price,
+          totalAmount: total,
+          fee,
+          isOnChain: true,
+          txHash: result.txHash,
+        },
+      })
+      .catch(() => null); // unique constraint = concurrent duplicate; safe to ignore
   }
 
   return NextResponse.json({

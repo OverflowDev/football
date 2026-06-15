@@ -74,6 +74,11 @@ export async function confirmTradeReceipt(args: ConfirmArgs): Promise<ConfirmRes
   if (a.playerToken.toLowerCase() !== args.expectedToken.toLowerCase()) {
     return { ok: false, reason: "Event token does not match the player" };
   }
+  // The platform trades whole shares only. Reject fractional amounts so the
+  // 18-decimal on-chain amount maps exactly to an Int share count (no truncation).
+  if (a.amount % 10n ** 18n !== 0n) {
+    return { ok: false, reason: "Fractional share amounts are not supported" };
+  }
 
   return {
     ok: true,

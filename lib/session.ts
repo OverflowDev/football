@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { hasDatabase } from "@/lib/config";
+import { hasDatabase, DEMO_MODE } from "@/lib/config";
 import { DEMO_USER } from "@/lib/mock-data";
 import { shortenAddress } from "@/lib/utils";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth-session";
@@ -50,4 +50,15 @@ export async function requireUser(): Promise<ApiUser | null> {
   const session = verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!session) return null;
   return getCurrentUser();
+}
+
+/**
+ * Guard for mutating routes. In DEMO mode (no database) the shared demo
+ * account is allowed to mutate the in-memory store so the zero-config demo
+ * works. In production a verified SIWE session is required — unauthenticated
+ * callers get null (and the route should return 401).
+ */
+export async function requireWriteUser(): Promise<ApiUser | null> {
+  if (DEMO_MODE) return getCurrentUser();
+  return requireUser();
 }
