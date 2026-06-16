@@ -32,6 +32,7 @@ const TOC = [
 
 const CONTRACTS = [
   ["FootballMarket", "0x8814FAf3eBA5684AB1deac17FFfb45AF334b9781"],
+  ["FootballFutures", "0xF6D58034ccF677c36183C346ff14ECd427628b23"],
   ["PriceOracle", "0xe971d008A04739663be5B0Ad597fDf06569B5420"],
   ["USDC (native)", "0x3600000000000000000000000000000000000000"],
   ["$YAMAL", "0x5195326808fc51326b489c5689698C53871bDaD2"],
@@ -120,20 +121,18 @@ export default function DocsPage() {
 
           <Section id="overview" icon={<TrendingUp className="h-5 w-5 text-up" />} title="What we built">
             <p>
-              FPI turns each footballer into a tradable asset. Every player has a live price
-              and (for tokenized players) a real ERC-20 token on Arc. Users start with{" "}
-              <strong>£10,000 virtual</strong> to learn the market, climb a leaderboard, and
-              can go fully <strong>on-chain</strong> — buying and selling shares in USDC — once
-              they connect a wallet.
+              FPI turns each footballer into a tradable asset. Tokenized players are real ERC-20
+              tokens on Arc; you trade them <strong>on-chain in USDC</strong> by connecting and
+              signing in with a wallet. There's no virtual/paper money — value is settled on-chain.
             </p>
             <Bullets
               items={[
                 "50 players across the top-5 European leagues, each with stats, news and a live price.",
-                "Spot trading (virtual or on-chain) plus leveraged Futures (long/short up to 10×).",
+                "On-chain spot trading in USDC, plus leveraged Futures (long/short up to 10×).",
                 "An IPO Center where new players list and the market discovers their value.",
                 "A pro trading UI: candlestick/line charts, order book, Price Drivers, watchlists, alerts, live ticker.",
-                "Leveraged futures: long or short any player up to 10× with USDC margin.",
-                "On-chain trading on Arc, where USDC is both the settlement currency and the gas token.",
+                "Wallet-only identity (SIWE) — connect + sign in, no email/password.",
+                "Arc network, where USDC is both the settlement currency and the gas token.",
               ]}
             />
           </Section>
@@ -142,7 +141,7 @@ export default function DocsPage() {
             <Pre>{`Football data (API-Football, NewsAPI)
         │
         ▼
-FPI pricing engine  ──►  Postgres (prices, history, portfolios)
+FPI pricing engine  ──►  Postgres (prices, history, news)
         │                         ▲
         ▼                         │
   price:update  ──►  Socket.io  ──► live UI (flashing prices, ticker)
@@ -180,23 +179,18 @@ FPI pricing engine  ──►  Postgres (prices, history, portfolios)
             </p>
           </Section>
 
-          <Section id="trading" icon={<Coins className="h-5 w-5 text-gold" />} title="Spot & Futures">
-            <p>The trade panel has two modes:</p>
+          <Section id="trading" icon={<Coins className="h-5 w-5 text-gold" />} title="Spot & Futures (on-chain)">
+            <p>Two modes, both settled in USDC on Arc:</p>
             <Bullets
               items={[
-                "Spot — buy/sell actual shares. A sub-toggle picks Virtual (off-chain £10,000 balance) or On-Chain (USDC via the FootballMarket contract on Arc). 0.5% fee.",
-                "Futures — virtual leveraged long/short (1×–10×). Margin = notional ÷ leverage; P&L = price move × size; each position has a liquidation price and is auto-liquidated if the mark crosses it.",
+                "Spot — buy/sell real player share tokens through FootballMarket (0.5% fee). prepare → wallet signs buyShares/sellShares → confirm, where the SERVER verifies the receipt + event (truth from the chain, with txHash replay-protection).",
+                "Futures — leveraged long/short (1×–10×) through FootballFutures. Post USDC margin; margin = notional ÷ leverage; P&L from the live mark price; each position has a liquidation price and can be liquidated.",
               ]}
             />
             <p>
-              On-chain, 10% of fees accrue to a dividend pool top holders claim monthly
-              (<code>claimDividends()</code>). Large orders show a price-impact warning because they
-              move the bonding curve. Open futures positions live on your Portfolio with real-time
-              P&L and a one-click close.
-            </p>
-            <p className="text-sm text-content-secondary">
-              Futures are off-chain (virtual). Real on-chain perps settling in USDC would need a
-              separate derivatives contract — not built yet.
+              Spot fees split 90/10 to treasury / a holder dividend pool (<code>claimDividends()</code>).
+              Your Portfolio reads on-chain spot holdings from the wallet and futures positions from the
+              contract — no virtual ledger, so nothing drifts out of sync.
             </p>
           </Section>
 
@@ -229,13 +223,14 @@ FPI pricing engine  ──►  Postgres (prices, history, portfolios)
             </p>
           </Section>
 
-          <Section id="identity" icon={<Wallet className="h-5 w-5 text-primary" />} title="Wallet identity">
+          <Section id="identity" icon={<Wallet className="h-5 w-5 text-primary" />} title="Wallet identity (SIWE)">
             <p>
-              There's no email or password — <strong>your wallet is your account</strong>. Connect
-              with RainbowKit and a cookie records your address; the backend upserts a user keyed by
-              that address (when a database is configured), tying your portfolio and trades to your
-              wallet. No wallet connected? You browse as a shared demo account, so the app is always
-              usable.
+              No email or password — <strong>your wallet is your account</strong>, via Sign-In With
+              Ethereum. The server issues a nonce, the wallet signs it, and the server verifies the
+              signature (plus domain, URI and chain) before setting a <strong>signed httpOnly
+              session cookie</strong>. The backend trusts only that session — never a client-set
+              cookie or an address from the request body — and write routes require a verified
+              session. You can browse without a wallet; trading needs one connected and signed in.
             </p>
           </Section>
 
@@ -261,10 +256,12 @@ FPI pricing engine  ──►  Postgres (prices, history, portfolios)
           <Section id="contracts" icon={<ShieldCheck className="h-5 w-5 text-sky-400" />} title="Smart contracts (Arc)">
             <p>
               Solidity + OpenZeppelin, deployed on Arc Testnet (chain ID <code>5042002</code>).
-              <code> FootballMarket</code> runs the market and holds each player's price;{" "}
-              <code>PlayerToken</code> is the ERC-20 per player (10M supply); <code>PriceOracle</code>{" "}
-              is an auxiliary on-chain feed. Price writes are gated behind <code>ORACLE_ROLE</code>{" "}
-              so only the platform's backend signer can update them.
+              <code> FootballMarket</code> runs the spot market and holds each player's price;{" "}
+              <code>FootballFutures</code> runs leveraged long/short positions (USDC margin,
+              liquidation), reading marks from the market; <code>PlayerToken</code> is the ERC-20
+              per player (10M supply); <code>PriceOracle</code> is an auxiliary feed. Price writes
+              are gated behind <code>ORACLE_ROLE</code> so only the platform's backend signer can
+              update them.
             </p>
             <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
               <table className="w-full min-w-[520px] text-sm">
@@ -316,7 +313,7 @@ npm run hardhat:deploy:arc`}</Pre>
           </Section>
 
           <p className="border-t border-white/5 pt-6 text-xs text-content-secondary">
-            Demo platform · virtual currency unless trading on-chain · not investment advice.
+            Testnet platform · trades settle in testnet USDC on Arc · not investment advice.
           </p>
         </article>
       </div>

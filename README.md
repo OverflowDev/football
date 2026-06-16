@@ -1,19 +1,16 @@
 # FPI — Football Performance Index
 
-A **stock market for football players**. Trade shares of real players like stocks, with
-AI-powered analytics, live price movements, a bonding-curve pricing engine, and on-chain
-settlement on the **Arc network** (Circle's EVM chain, where **USDC is the native gas token**).
+A **stock market for football players**. Trade shares of real players like stocks — **on-chain
+in USDC on the Arc network** (Circle's EVM chain, where USDC is the native gas token) — with
+**leveraged futures**, a bonding-curve pricing engine, live charts and real-time prices.
 
 > 📘 **Guides:** [DATABASE.md](DATABASE.md) (database setup) · [DEPLOYMENT.md](DEPLOYMENT.md)
 > (deploy contracts to Arc + ship the full stack). In-app docs live at **`/docs`**.
 
-Built as a single full-stack Next.js 14 app. **It boots with zero configuration** — without
-any API keys or a database it runs in **DEMO mode** on deterministic mock data (50 players,
-live-simulated prices, working virtual trading, streaming AI fallbacks). Add env vars to
-progressively light up Postgres, OpenAI, real football data, and the on-chain layer.
-
-**Identity is your wallet** — connect with RainbowKit, no email/password. There's no premium
-tier; every feature (including the AI agents) is free.
+A single full-stack Next.js 14 app. Browsing works with **zero configuration** (deterministic
+mock data, live-simulated prices); **trading is on-chain**, so it needs a connected, signed-in
+wallet. There is **no virtual/paper balance and no AI** — identity is your wallet and value is
+settled on Arc.
 
 ---
 
@@ -25,18 +22,17 @@ tier; every feature (including the AI agents) is free.
 | Fonts        | Sora (display/numerics) + Inter (body)                        |
 | State / data | Zustand, TanStack Query                                       |
 | Backend      | Next.js Route Handlers, Zod validation                        |
-| Database     | PostgreSQL + Prisma (Supabase)                                |
+| Database     | PostgreSQL + Prisma (Supabase) — optional                     |
 | Cache        | Upstash Redis — optional (in-memory fallback)                 |
-| AI           | OpenAI (`gpt-4o`), streaming + JSON mode                      |
 | Realtime     | Socket.io (standalone server) + in-browser simulator         |
 | Charts       | TradingView Lightweight-Charts + Recharts                    |
-| Identity     | Wallet-only — Wagmi + Viem + RainbowKit                       |
+| Identity     | Wallet-only **SIWE** — Wagmi + Viem + RainbowKit              |
 | Contracts    | Solidity (OpenZeppelin) on **Arc**, Hardhat                   |
 | Data feeds   | API-Football (player stats) + NewsAPI (news) + openfootball (free fixtures) |
 
 ---
 
-## Quick start (zero config)
+## Quick start
 
 ```bash
 npm install
@@ -44,9 +40,9 @@ npm run dev
 # open http://localhost:3000  → "Launch App" → /dashboard
 ```
 
-No `.env` needed. You're dropped into DEMO mode as a demo trader with £10,000 virtual,
-a starter portfolio, live-flashing prices, working buy/sell, and AI agents that stream a
-grounded demo response.
+No `.env` needed to **browse** — the market, players, charts and IPO pages render from mock
+data. To **trade**, connect a wallet (RainbowKit), sign in, and use the on-chain layer
+(see below).
 
 > If your editor complains about `@prisma/client`, run `npm run prisma:generate` once.
 
@@ -54,45 +50,55 @@ grounded demo response.
 
 ## Full setup
 
-1. **Copy env:** `cp .env.example .env` and fill in what you want to enable.
+1. **Copy env:** `cp .env.example .env` and fill in what you want.
 2. **Database (optional, Supabase):**
    ```bash
    npm run prisma:generate
    npm run prisma:push      # create tables
-   npm run prisma:seed      # load 18 clubs, 50 players, news, demo user
+   npm run prisma:seed      # load 18 clubs, 50 players, news
    ```
-   See [DATABASE.md](DATABASE.md) for the Supabase pooler/IPv4 details.
-3. **AI (optional):** set `OPENAI_API_KEY` (model defaults to `gpt-4o`).
-4. **Football data (optional):** `API_FOOTBALL_KEY` (api-sports.io) + `NEWS_API_KEY` (newsapi.org).
-5. **Realtime (optional):** run the socket server in a second terminal and set
-   `NEXT_PUBLIC_SOCKET_URL=http://localhost:3001`:
+   See [DATABASE.md](DATABASE.md) for the Supabase IPv4 pooler details.
+3. **Football data (optional):** `API_FOOTBALL_KEY` (api-sports.io) + `NEWS_API_KEY` (newsapi.org).
+4. **Realtime (optional):** run the socket server and set `NEXT_PUBLIC_SOCKET_URL`:
    ```bash
-   npx tsx server/socket-server.ts
+   npx tsx server/socket-server.ts   # :3001
    ```
    Without it, the client runs a local price simulator.
-6. **Wallet (optional):** set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (cloud.reown.com) for
-   wallet connect, then the Arc/contract vars to enable on-chain trading.
+5. **Wallet + on-chain:** set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (cloud.reown.com),
+   `SESSION_SECRET` (`openssl rand -hex 32`), and the Arc/contract addresses to enable trading.
 
-### Feature flags
-
-Everything degrades gracefully (see `lib/config.ts`):
-
-- No `DATABASE_URL` → `DEMO_MODE` (mock data + a shared demo account, no DB).
-- No `OPENAI_API_KEY` → AI streams a grounded canned response.
-- No `API_FOOTBALL_KEY` / `NEWS_API_KEY` → deterministic mock stats & news.
-- No Upstash → in-memory cache.
-- No wallet connected → you browse as the demo account; connect to get your own.
+Everything degrades gracefully (`lib/config.ts`): no DB → mock data; no Redis → in-memory
+cache; no data keys → deterministic mock stats/fixtures.
 
 ---
 
-## How identity works (wallet-only)
+## Identity — wallet sign-in (SIWE)
 
-There is no NextAuth, no email, no password. When you connect a wallet:
+No email/password, no NextAuth. Sign-in is **Sign-In With Ethereum**:
 
-1. `WalletSync` writes an `fpi_wallet` cookie with your address.
-2. `lib/session.ts#getCurrentUser` reads that cookie and **upserts a user keyed by wallet
-   address** (when a DB is configured), so your portfolio/trades are tied to your wallet.
-3. No wallet → a shared demo account, so the app is always usable.
+1. `GET /api/auth/nonce` issues a nonce + the exact message to sign (nonce in an httpOnly cookie).
+2. The wallet signs it; `POST /api/auth/verify` checks the nonce, **domain/URI/chain**, and the
+   signature (`viem.verifyMessage`), then sets a **signed httpOnly session cookie**.
+3. `getCurrentUser()` trusts **only** that server-signed session — never `document.cookie` or a
+   wallet address from the request body. Write routes require a verified session in production.
+
+---
+
+## Trading — on-chain spot & futures
+
+The trade panel has two modes, both settled in **USDC on Arc**:
+
+- **Spot** — buy/sell real player share tokens through **`FootballMarket`** (0.5% fee). Available
+  for tokenized players (others show "not tokenized"). Flow: `/api/trade/prepare` → wallet signs
+  `buyShares`/`sellShares` → `/api/trade/confirm`, where the **server verifies the receipt + the
+  `SharesBought/SharesSold` event** (truth from the chain, with txHash replay-protection).
+- **Futures** — leveraged long/short (1×–10×) through **`FootballFutures`**: post USDC margin,
+  P&L from the live mark price, with a liquidation price and `liquidate()`. Flow:
+  `/api/futures/prepare` → approve USDC margin → `openPosition`; positions are **read live from
+  the chain** (`/api/futures`); close via `closePosition`.
+
+Your **Portfolio** shows on-chain spot holdings (read from the wallet), open futures positions
+(read from the contract), and trade history — no virtual ledger to drift out of sync.
 
 ---
 
@@ -104,42 +110,21 @@ There is no NextAuth, no email, no password. When you connect a wallet:
 Price = BaseValue × (1 + (FormRating + RumorScore − InjuryPenalty)/100) × (Demand/Supply)
 ```
 
-- **FormRating** 0–100 (goals/assists/ratings) · **RumorScore** 0–50 (AI News Agent)
+- **FormRating** 0–100 (goals/assists/ratings) · **RumorScore** 0–50 (transfer-rumor signal)
 - **InjuryPenalty** 0 healthy / 30 injured
-- **Demand/Supply**: a bonding curve — every buy nudges the next share price **+0.1%**,
-  every sell **−0.1%** (`bondingCurveBuyCost` / `bondingCurveSellReturn`).
+- **Demand/Supply**: a bonding curve — every buy nudges the next price **+0.1%**, every sell **−0.1%**.
 
-`calculateNewPrice()` layers short-term match/sentiment/demand multipliers with
-age-based volatility and a **±20% per-update dampener**. The 30-min cron recomputes all
-prices and writes `PriceHistory`. **Prices are computed by the platform** (the football
-*data* is external; the *share price* is ours) and pushed on-chain by the oracle signer.
-
-Each player page shows a **Price Drivers** panel ("📈 up 12% because: goal scored,
-transfer links, strong demand") surfacing the same signals the engine uses.
-
----
-
-## Trading: Spot & Futures
-
-The trade panel has two modes:
-
-- **Spot** — buy/sell actual shares. Sub-toggle for **Virtual** (off-chain virtual
-  balance) or **On-Chain** (USDC on Arc via FootballMarket). 0.5% fee.
-- **Futures** — **virtual leveraged long/short** (1×–10×): margin = notional ÷ leverage,
-  P&L = price move × size, with a computed **liquidation price** and auto-liquidation.
-  Off-chain only. See `lib/futures.ts` (+ client-safe math in `lib/futures-math.ts`),
-  `/api/futures/open|close`, and the Futures Positions table on the Portfolio page.
-
-> On-chain *futures* (real perps settling in USDC) would need a separate derivatives
-> contract — not built. Current futures are virtual.
+`calculateNewPrice()` layers match/sentiment/demand multipliers with age-based volatility and a
+**±20% per-update dampener**. The price cron recomputes all prices, writes `PriceHistory`, and
+**pushes them on-chain** via the oracle signer (`updatePrices`). Each player page has a
+**Price Drivers** panel explaining *why* a price is moving (goals, transfer links, injury, demand).
 
 ---
 
 ## IPO Center (`/ipo`)
 
-An "Initial Player Offering" hub: **Upcoming** (follow/get notified), **Live** (IPO price,
-shares-sold progress bar, countdown, reserve), and **Recently Listed** (IPO→now gain,
-links to the tradable player). New players fair-launch at a fixed price (default $10) and
+An "Initial Player Offering" hub: **Upcoming** (follow), **Live** (IPO price, shares-sold progress,
+countdown), and **Recently Listed** (IPO→now gain). New players fair-launch at a fixed price and
 the market reprices from there. Data in `lib/ipo.ts`, served via `/api/ipo`.
 
 ---
@@ -148,24 +133,8 @@ the market reprices from there. Data in `lib/ipo.ts`, served via `/api/ipo`.
 
 - **API-Football** (`API_FOOTBALL_KEY`) — per-player goals/assists/ratings for the engine.
 - **NewsAPI** (`NEWS_API_KEY`) — news → sentiment.
-- **openfootball** — **free, no key**: fixtures/results pulled from the public
-  `football.json` GitHub dataset (`lib/openfootball.ts` → `/api/fixtures` → dashboard
-  Fixtures widget). Cached 1h with an offline fallback.
-
----
-
-## AI agents
-
-Four streaming agents under `app/api/ai/*`, each injecting **live FPI data** into the
-system prompt (`lib/ai-context.ts`), powered by OpenAI:
-
-- **Scout** — finds undervalued players, returns structured buy recs.
-- **Valuation** — fair value, upside %, verdict.
-- **Portfolio** — analyses *your* holdings (injected) for risk & rebalancing.
-- **News** — maps stories to affected players + predicted price impact.
-
-`/api/ai/insight` returns a strictly-typed `AIInsight` (OpenAI JSON mode with a
-deterministic fallback in `lib/ai-insight.ts`).
+- **openfootball** — **free, no key**: fixtures/results from the public `football.json` GitHub
+  dataset (`lib/openfootball.ts` → `/api/fixtures` → dashboard Fixtures widget). Cached 1h.
 
 ---
 
@@ -174,32 +143,36 @@ deterministic fallback in `lib/ai-insight.ts`).
 In `contracts/`:
 
 - **`PlayerToken.sol`** — ERC-20 per player (`$YAMAL`…), 10M cap, mintable by platform, burnable.
-- **`FootballMarket.sol`** — deploys player tokens, `buyShares`/`sellShares` in USDC with a
-  **0.5% fee**, oracle-gated `updatePrice(s)`, `getUserPortfolio`, and holder `claimDividends`
-  (10% of fees). `Ownable` + `AccessControl` + `ReentrancyGuard`, full NatSpec.
+- **`FootballMarket.sol`** — deploys player tokens, `buyShares`/`sellShares` in USDC (**0.5% fee**),
+  oracle-gated `updatePrice(s)`, `getUserPortfolio`, holder `claimDividends`. `Ownable` +
+  `AccessControl` + `ReentrancyGuard`, full NatSpec.
+- **`FootballFutures.sol`** — leveraged long/short on player prices: USDC margin, 1–10×, P&L,
+  `closePosition`, `liquidate()`. Reads mark prices from `FootballMarket`.
 - **`PriceOracle.sol`** — auxiliary on-chain price feed (`ORACLE_ROLE`).
 - **`MockUSDC.sol`** — 6-decimal faucet token (local/Base-Sepolia only; **not** Arc).
 
-**Arc** is EVM-compatible and uses **USDC as the native gas token**, which already exists as a
-system contract at `0x3600…0000` — so no mock token is deployed there.
+**Arc** uses **USDC as the native gas token**, already deployed as a system contract at
+`0x3600…0000`, so no mock token is used there.
 
 ```bash
 # Fund your deployer with testnet USDC (gas) at https://faucet.circle.com (Arc Testnet)
-PRIVATE_KEY=0x...           # in .env
+PRIVATE_KEY=0x...                 # in .env
 npm run hardhat:compile
-npm run hardhat:deploy:arc  # Oracle, Market + launch player tokens using native USDC
-# writes deployments.json; set NEXT_PUBLIC_FOOTBALL_MARKET_ADDRESS + NEXT_PUBLIC_PRICE_ORACLE_ADDRESS
+npm run hardhat:deploy:arc        # Oracle + Market + Futures + launch player tokens
+# then, to add/update only futures against an existing market:
+npm run deploy:futures
+FUTURES_FUND_USDC=20 npm run fund:futures   # seed the futures payout pool
 ```
 
-Chain ID `5042002` · RPC `https://rpc.testnet.arc.network` · explorer
-`https://testnet.arcscan.app`. Full walkthrough (faucet, oracle role, liquidity,
-verification, frontend wiring) in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+Chain ID `5042002` · RPC `https://rpc.testnet.arc.network` · explorer `https://testnet.arcscan.app`.
+Full walkthrough in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ### Current Arc Testnet deployment
 
 | Contract | Address |
 | --- | --- |
 | FootballMarket | `0x8814FAf3eBA5684AB1deac17FFfb45AF334b9781` |
+| FootballFutures | `0xF6D58034ccF677c36183C346ff14ECd427628b23` |
 | PriceOracle | `0xe971d008A04739663be5B0Ad597fDf06569B5420` |
 | USDC (native) | `0x3600000000000000000000000000000000000000` |
 | $YAMAL | `0x5195326808fc51326b489c5689698C53871bDaD2` |
@@ -213,12 +186,13 @@ verification, frontend wiring) in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ```
 app/                     # App Router: (dashboard: dashboard/market/ipo/portfolio/…), api/, docs/, landing
-components/               # ui · shared · layout · market · portfolio · ai · landing · providers
-hooks/                   # useSocket, usePlayer, usePortfolio, useTrade, useFutures, useAIAgent, useNotifications
-lib/                     # prisma, redis, openai, pricing-engine, futures, ipo, openfootball, oracle, data, web3, …
+components/               # ui · shared · layout · market · portfolio · landing · providers · auth
+hooks/                   # useSocket, usePlayer, useTransactions, useOnchainTrade, useFutures, useSiwe, useNotifications
+lib/                     # prisma, market-data, pricing-engine, onchain, onchain-futures, onchain-portfolio,
+                         #   futures-math, oracle, siwe, auth-session, session, env, web3, ipo, openfootball, …
 store/                   # Zustand global store
 types/                   # shared TypeScript types
-contracts/ scripts/      # Solidity + Hardhat deploy
+contracts/ scripts/      # Solidity + Hardhat deploy/fund scripts
 prisma/                  # schema + seed
 server/                  # standalone Socket.io server
 ```
@@ -229,24 +203,24 @@ server/                  # standalone Socket.io server
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Dev server |
-| `npm run build` / `start` | Production build / serve |
+| `npm run dev` / `build` / `start` | Dev / production build / serve |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm test` / `test:contracts` | Vitest unit tests / Hardhat contract tests |
 | `npm run prisma:push` / `seed` / `studio` | DB schema / seed / GUI |
 | `npm run hardhat:compile` | Compile contracts |
-| `npm run hardhat:deploy:arc` | Deploy to Arc Testnet |
+| `npm run hardhat:deploy:arc` | Deploy all contracts to Arc Testnet |
+| `npm run deploy:futures` / `fund:futures` | Deploy + fund FootballFutures |
 
 ---
 
 ## Deployment
 
-- **Vercel** — frontend + API + cron (`vercel.json` schedules the three cron routes).
-- **Supabase** — Postgres (`DATABASE_URL`, via the IPv4 session pooler — see DATABASE.md).
-- **Upstash** — Redis (optional).
-- **Railway/Render** — the standalone Socket.io server (optional).
-- Secure cron with `CRON_SECRET` (a random token you generate; Vercel Cron sends it as
-  `Authorization: Bearer …`).
+- **Vercel** — frontend + API + cron (`vercel.json` schedules the cron routes; Hobby = daily).
+- **Supabase** — Postgres (`DATABASE_URL` via the IPv4 session pooler — see DATABASE.md).
+- **Upstash** — Redis (optional). **Railway/Render** — the Socket.io server (optional).
+- Secure cron with `CRON_SECRET`; set `SESSION_SECRET` + the `NEXT_PUBLIC_*` contract addresses
+  in the host env (the `NEXT_PUBLIC_*` ones are baked at build time, so set them before building).
 
 ---
 
-_Demo platform · virtual currency unless trading on-chain · not investment advice._
+_Demo/testnet platform · trades settle in testnet USDC on Arc · not investment advice._
