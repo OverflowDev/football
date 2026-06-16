@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { marketData } from "@/lib/market-data";
 import { getPlayerById as mockGetPlayerById } from "@/lib/mock-data";
 import { demoState } from "@/lib/demo-store";
-import type { MarketStats, Player, PortfolioSummary, Transaction } from "@/types";
+import type { MarketStats, Player, Transaction } from "@/types";
 
 // ---- players (via provider) ----------------------------------------
 export function fetchPlayers(): Promise<Player[]> {
@@ -18,9 +18,6 @@ export function fetchPlayer(slug: string): Promise<Player | null> {
 }
 export function fetchPlayerById(id: string): Promise<Player | null> {
   return marketData.getPlayerById(id);
-}
-export function fetchPortfolio(userId: string): Promise<PortfolioSummary> {
-  return marketData.getPortfolio(userId);
 }
 
 // ---- market stats ---------------------------------------------------

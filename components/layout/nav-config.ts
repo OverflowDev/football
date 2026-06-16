@@ -4,7 +4,6 @@ import {
   Wallet,
   Trophy,
   Star,
-  Sparkles,
   Settings,
   BookOpen,
   Rocket,
@@ -23,7 +22,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "IPOs", href: "/ipo", icon: Rocket },
   { label: "Portfolio", href: "/portfolio", icon: Wallet },
   { label: "Watchlist", href: "/watchlist", icon: Star },
-  { label: "AI Agents", href: "/ai", icon: Sparkles },
   { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { label: "Docs", href: "/docs", icon: BookOpen },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -33,7 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
 export const MOBILE_NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Market", href: "/market", icon: TrendingUp },
+  { label: "IPOs", href: "/ipo", icon: Rocket },
   { label: "Portfolio", href: "/portfolio", icon: Wallet },
-  { label: "AI", href: "/ai", icon: Sparkles },
   { label: "More", href: "/settings", icon: Settings },
 ];

@@ -97,6 +97,75 @@ export const FOOTBALL_MARKET_ABI = [
   },
 ] as const;
 
+export const FOOTBALL_FUTURES_ABI = [
+  {
+    type: "function",
+    name: "openPosition",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "playerToken", type: "address" },
+      { name: "isLong", type: "bool" },
+      { name: "size", type: "uint256" },
+      { name: "leverage", type: "uint8" },
+    ],
+    outputs: [{ name: "id", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "closePosition",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "getUserPositions",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
+  {
+    type: "function",
+    name: "positions",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [
+      { name: "owner", type: "address" },
+      { name: "playerToken", type: "address" },
+      { name: "isLong", type: "bool" },
+      { name: "size", type: "uint256" },
+      { name: "leverage", type: "uint8" },
+      { name: "entryPrice", type: "uint256" },
+      { name: "margin", type: "uint256" },
+      { name: "open", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "positionValue",
+    stateMutability: "view",
+    inputs: [{ name: "id", type: "uint256" }],
+    outputs: [
+      { name: "pnl", type: "int256" },
+      { name: "liquidatable", type: "bool" },
+    ],
+  },
+  {
+    type: "event",
+    name: "PositionOpened",
+    inputs: [
+      { name: "id", type: "uint256", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "playerToken", type: "address", indexed: true },
+      { name: "isLong", type: "bool", indexed: false },
+      { name: "size", type: "uint256", indexed: false },
+      { name: "leverage", type: "uint8", indexed: false },
+      { name: "entryPrice", type: "uint256", indexed: false },
+      { name: "margin", type: "uint256", indexed: false },
+    ],
+  },
+] as const;
+
 export const ERC20_ABI = [
   {
     type: "function",

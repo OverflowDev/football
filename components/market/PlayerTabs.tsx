@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { InsightCard } from "@/components/ai/InsightCard";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { usePlayerNews } from "@/hooks/usePlayer";
-import { fetcher } from "@/hooks/useApi";
 import {
   cn,
   formatCompactNumber,
@@ -15,9 +12,9 @@ import {
   shortenAddress,
   timeAgo,
 } from "@/lib/utils";
-import type { AIInsight, Player, Sentiment } from "@/types";
+import type { Player, Sentiment } from "@/types";
 
-const TABS = ["Stats", "News", "AI Analysis", "On-Chain"] as const;
+const TABS = ["Stats", "News", "On-Chain"] as const;
 type Tab = (typeof TABS)[number];
 
 const SENTIMENT_VARIANT: Record<Sentiment, "up" | "down" | "neutral"> = {
@@ -51,7 +48,6 @@ export function PlayerTabs({ player }: { player: Player }) {
 
       {tab === "Stats" && <StatsTab player={player} />}
       {tab === "News" && <NewsTab playerId={player.id} />}
-      {tab === "AI Analysis" && <AIAnalysisTab player={player} />}
       {tab === "On-Chain" && <OnChainTab player={player} />}
     </div>
   );
@@ -125,15 +121,6 @@ function NewsTab({ playerId }: { playerId: string }) {
       ))}
     </div>
   );
-}
-
-function AIAnalysisTab({ player }: { player: Player }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["insight", player.id],
-    queryFn: () => fetcher<{ insight: AIInsight }>(`/api/ai/insight?playerId=${player.id}`),
-  });
-  if (isLoading || !data) return <SkeletonCard />;
-  return <InsightCard insight={data.insight} />;
 }
 
 function OnChainTab({ player }: { player: Player }) {

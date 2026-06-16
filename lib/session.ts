@@ -34,8 +34,6 @@ export async function getCurrentUser(): Promise<ApiUser> {
     email: user.email ?? "",
     image: user.image ?? `https://ui-avatars.com/api/?name=${session.address.slice(2, 4)}&background=6366f1&color=fff`,
     walletAddress: user.walletAddress,
-    virtualBalance: Number(user.virtualBalance),
-    isPremium: false,
   };
 }
 

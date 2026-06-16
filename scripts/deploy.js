@@ -71,6 +71,14 @@ async function main() {
   const marketAddress = await market.getAddress();
   console.log("  ✓ FootballMarket:", marketAddress);
 
+  // 3b. FootballFutures (leveraged long/short, reads prices from the market)
+  console.log("  Deploying FootballFutures…");
+  const FootballFutures = await hre.ethers.getContractFactory("FootballFutures");
+  const futures = await FootballFutures.deploy(usdcAddress, marketAddress, deployer.address);
+  await futures.waitForDeployment();
+  const futuresAddress = await futures.getAddress();
+  console.log("  ✓ FootballFutures:", futuresAddress);
+
   // 4. Launch a few player tokens
   console.log("  Launching player tokens…");
   const deployed = [];
@@ -97,6 +105,7 @@ async function main() {
     usdc: usdcAddress,
     priceOracle: oracleAddress,
     footballMarket: marketAddress,
+    footballFutures: futuresAddress,
     players: deployed,
     deployedAt: new Date().toISOString(),
   };
@@ -104,6 +113,7 @@ async function main() {
   console.log("\n✅ Done. Wrote deployments.json");
   console.log("\nSet in your .env:");
   console.log(`  NEXT_PUBLIC_FOOTBALL_MARKET_ADDRESS=${marketAddress}`);
+  console.log(`  NEXT_PUBLIC_FOOTBALL_FUTURES_ADDRESS=${futuresAddress}`);
   console.log(`  NEXT_PUBLIC_USDC_ADDRESS=${usdcAddress}`);
 }
 

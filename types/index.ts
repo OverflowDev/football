@@ -195,8 +195,6 @@ export interface ApiUser {
   email: string;
   image: string;
   walletAddress: string | null;
-  virtualBalance: number;
-  isPremium: boolean;
 }
 
 export interface TradeRequest {

@@ -22,6 +22,8 @@
     "hardhat:deploy:arc": "hardhat run scripts/deploy.js --network arcTestnet",
     "hardhat:deploy:arc-mainnet": "hardhat run scripts/deploy.js --network arc",
     "fund:market": "hardhat run scripts/fund-market.js --network arcTestnet",
+    "deploy:futures": "hardhat run scripts/deploy-futures.js --network arcTestnet",
+    "fund:futures": "hardhat run scripts/fund-futures.js --network arcTestnet",
     "hardhat:verify:arc": "hardhat verify --network arcTestnet",
     "hardhat:deploy:sepolia": "hardhat run scripts/deploy.js --network baseSepolia",
     "hardhat:deploy:base": "hardhat run scripts/deploy.js --network base"
@@ -40,7 +42,6 @@
     "lightweight-charts": "^4.2.2",
     "lucide-react": "^0.468.0",
     "next": "14.2.18",
-    "openai": "^4.77.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.13.3",

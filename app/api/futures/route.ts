@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { listPositions } from "@/lib/futures";
+import { getOnChainPositions } from "@/lib/onchain-futures";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
+/** Open futures positions, read live from the FootballFutures contract. */
 export async function GET() {
   const user = await getCurrentUser();
-  const positions = await listPositions(user);
+  if (!user.walletAddress) return NextResponse.json({ positions: [] });
+  const positions = await getOnChainPositions(user.walletAddress);
   return NextResponse.json({ positions });
 }

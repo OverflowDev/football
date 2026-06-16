@@ -4,7 +4,6 @@ import {
   Activity,
   ArrowLeft,
   TrendingUp,
-  Bot,
   Coins,
   Wallet,
   Radio,
@@ -24,7 +23,6 @@ const TOC = [
   { id: "pricing", label: "The pricing engine" },
   { id: "trading", label: "Spot & Futures" },
   { id: "ipo", label: "IPO Center" },
-  { id: "ai", label: "AI agents" },
   { id: "realtime", label: "Live updates" },
   { id: "identity", label: "Wallet identity" },
   { id: "architecture", label: "Architecture" },
@@ -47,7 +45,6 @@ const STACK = [
   ["State / data", "Zustand + TanStack Query"],
   ["Backend", "Next.js Route Handlers + Zod validation"],
   ["Database", "PostgreSQL + Prisma (Supabase)"],
-  ["AI", "OpenAI gpt-4o (streaming + JSON mode)"],
   ["Realtime", "Socket.io + in-browser simulator"],
   ["Charts", "TradingView Lightweight-Charts + Recharts"],
   ["Identity", "Wallet-only — Wagmi + Viem + RainbowKit"],
@@ -117,7 +114,7 @@ export default function DocsPage() {
             <p className="mt-3 text-lg text-content-secondary">
               FPI — the Football Performance Index — is a stock market for football players.
               You trade shares of real players like stocks; prices move with form, transfers
-              and market demand, with AI analytics and on-chain settlement on the Arc network.
+              and market demand, with leveraged futures and on-chain settlement on the Arc network.
             </p>
           </header>
 
@@ -135,7 +132,7 @@ export default function DocsPage() {
                 "Spot trading (virtual or on-chain) plus leveraged Futures (long/short up to 10×).",
                 "An IPO Center where new players list and the market discovers their value.",
                 "A pro trading UI: candlestick/line charts, order book, Price Drivers, watchlists, alerts, live ticker.",
-                "Four AI agents (Scout, Valuation, Portfolio, News) that reason over live platform data.",
+                "Leveraged futures: long or short any player up to 10× with USDC margin.",
                 "On-chain trading on Arc, where USDC is both the settlement currency and the gas token.",
               ]}
             />
@@ -168,7 +165,7 @@ FPI pricing engine  ──►  Postgres (prices, history, portfolios)
             <Bullets
               items={[
                 "FormRating (0–100): derived from goals, assists and match ratings.",
-                "RumorScore (0–50): transfer-rumor signal parsed by the AI News Agent.",
+                "RumorScore (0–50): transfer-rumor signal from the news feed.",
                 "InjuryPenalty: 0 if fit, 30 if injured.",
                 "Demand/Supply: a bonding curve — every BUY raises the next share price by 0.1%, every SELL lowers it by 0.1%.",
               ]}
@@ -219,28 +216,6 @@ FPI pricing engine  ──►  Postgres (prices, history, portfolios)
               New players fair-launch at a fixed price (default $10) and the market reprices them
               from there — so a complete unknown and a superstar both start equal and the market
               decides their value.
-            </p>
-          </Section>
-
-          <Section id="ai" icon={<Bot className="h-5 w-5 text-primary" />} title="AI agents">
-            <p>
-              Four streaming agents (<code>app/api/ai/*</code>) powered by OpenAI{" "}
-              <code>gpt-4o</code>. Before each call we inject <strong>live platform data</strong>{" "}
-              (current prices, modelled fair values, form, news, and — for the Portfolio agent —
-              your actual holdings) into the system prompt, so answers are grounded in FPI data
-              rather than the model's general knowledge.
-            </p>
-            <Bullets
-              items={[
-                "Scout — finds undervalued players and returns structured buy recommendations.",
-                "Valuation — fair value, upside %, and a verdict (undervalued / fair / overvalued).",
-                "Portfolio — analyses your holdings for risk, concentration and rebalancing.",
-                "News — turns the day's stories into a briefing with per-player price impact.",
-              ]}
-            />
-            <p className="text-sm text-content-secondary">
-              Without an <code>OPENAI_API_KEY</code>, agents stream a grounded demo response, and{" "}
-              <code>/api/ai/insight</code> falls back to a deterministic model — so the UI always works.
             </p>
           </Section>
 

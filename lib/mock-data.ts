@@ -486,27 +486,11 @@ export function getNotifications(): NotificationItem[] {
   }));
 }
 
-// ---- demo portfolio (for zero-config viewing) -----------------------
-export interface DemoHoldingSeed {
-  playerId: string;
-  shares: number;
-  averageBuyPrice: number;
-}
-
-export const DEMO_HOLDINGS: DemoHoldingSeed[] = [
-  { playerId: "player_1", shares: 220, averageBuyPrice: 78.4 },
-  { playerId: "player_5", shares: 600, averageBuyPrice: 41.2 },
-  { playerId: "player_11", shares: 410, averageBuyPrice: 33.9 },
-  { playerId: "player_34", shares: 350, averageBuyPrice: 52.1 },
-  { playerId: "player_18", shares: 180, averageBuyPrice: 64.5 },
-];
-
+// ---- demo user (read-only identity when no wallet session) ----------
 export const DEMO_USER = {
   id: "demo-user",
   name: "Demo Trader",
   email: "demo@fpi.market",
   image: "https://i.pravatar.cc/96?u=demo",
   walletAddress: null as string | null,
-  virtualBalance: 6420.55,
-  isPremium: false,
 };

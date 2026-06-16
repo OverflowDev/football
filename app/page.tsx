@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import {
   Activity,
   TrendingUp,
-  Sparkles,
   Coins,
   ArrowRight,
   ShieldCheck,
-  Bot,
+  Zap,
+  Rocket,
   LineChart,
 } from "lucide-react";
 import { AuroraBackground } from "@/components/landing/AuroraBackground";
@@ -29,9 +29,9 @@ const FEATURES = [
     ring: "hover:border-up/30",
   },
   {
-    icon: <Bot className="h-5 w-5 text-primary" />,
-    title: "Four AI agents",
-    body: "Scout, Valuation, Portfolio and News agents stream grounded, data-backed analysis from OpenAI on demand.",
+    icon: <Zap className="h-5 w-5 text-primary" />,
+    title: "Leveraged futures",
+    body: "Go long or short on any player with up to 10× leverage, with on-chain USDC margin and automatic liquidation.",
     ring: "hover:border-primary/30",
   },
   {
@@ -48,23 +48,23 @@ const FEATURES = [
   },
   {
     icon: <ShieldCheck className="h-5 w-5 text-sky-400" />,
-    title: "Risk-free to start",
-    body: "Begin with £10,000 virtual. Climb the leaderboard, then go on-chain when you're ready.",
+    title: "Price Drivers",
+    body: "Every player shows why its price is moving — goals, transfer links, injuries and demand — in one clear panel.",
     ring: "hover:border-sky-400/30",
   },
   {
-    icon: <Sparkles className="h-5 w-5 text-fuchsia-400" />,
-    title: "Daily AI briefing",
-    body: "Wake up to a market summary that maps the night's football news to price moves across your watchlist.",
+    icon: <Rocket className="h-5 w-5 text-fuchsia-400" />,
+    title: "IPO Center",
+    body: "Discover and back new players before they list. New listings fair-launch and the market finds their value.",
     ring: "hover:border-fuchsia-400/30",
   },
 ];
 
 const STATS = [
   { value: "50+", label: "Tradable players" },
-  { value: "4", label: "AI agents" },
+  { value: "10×", label: "Max leverage" },
   { value: "0.5%", label: "Trading fee" },
-  { value: "£10k", label: "Starting balance" },
+  { value: "USDC", label: "On-chain on Arc" },
 ];
 
 export default function LandingPage() {
@@ -135,8 +135,8 @@ export default function LandingPage() {
             className="mt-5 max-w-md text-lg text-content-secondary"
           >
             Trade shares of real players like stocks. Prices move with form,
-            transfers and demand — backed by AI scouting, live charts and on-chain
-            settlement in USDC.
+            transfers and demand — with leveraged futures, live charts and on-chain
+            settlement in USDC on Arc.
           </motion.p>
 
           <motion.div

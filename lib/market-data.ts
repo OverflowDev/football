@@ -11,54 +11,12 @@ import {
   nationalityCodeFor,
   symbolFor,
 } from "@/lib/mock-data";
-import { demoState } from "@/lib/demo-store";
-import type { Holding, Player, PortfolioSummary, Position, League } from "@/types";
+import type { Player, Position, League } from "@/types";
 
 export interface MarketDataProvider {
   getPlayers(): Promise<Player[]>;
   getPlayerById(id: string): Promise<Player | null>;
   getPlayerBySlug(slug: string): Promise<Player | null>;
-  getPortfolio(userId: string): Promise<PortfolioSummary>;
-}
-
-// ───────────────────────── shared portfolio math ─────────────────────
-function buildHolding(player: Player, shares: number, avgBuy: number, invested: number): Holding {
-  const currentValue = Math.round(shares * player.currentPrice * 100) / 100;
-  const pnl = Math.round((currentValue - invested) * 100) / 100;
-  const pnlPercent = invested > 0 ? (pnl / invested) * 100 : 0;
-  return {
-    player,
-    shares,
-    averageBuyPrice: avgBuy,
-    totalInvested: invested,
-    currentValue,
-    pnl,
-    pnlPercent: Math.round(pnlPercent * 100) / 100,
-  };
-}
-
-function summarize(holdings: Holding[], cashBalance: number): PortfolioSummary {
-  holdings.sort((a, b) => b.currentValue - a.currentValue);
-  const totalValue = holdings.reduce((s, h) => s + h.currentValue, 0);
-  const totalInvested = holdings.reduce((s, h) => s + h.totalInvested, 0);
-  const totalPnl = Math.round((totalValue - totalInvested) * 100) / 100;
-  const totalPnlPercent = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
-  const dayChange = holdings.reduce((s, h) => s + h.shares * h.player.priceChange24h, 0);
-  const dayChangePercent = totalValue > 0 ? (dayChange / (totalValue - dayChange)) * 100 : 0;
-  const byPnl = [...holdings].sort((a, b) => b.pnlPercent - a.pnlPercent);
-  return {
-    totalValue: Math.round(totalValue * 100) / 100,
-    totalInvested: Math.round(totalInvested * 100) / 100,
-    cashBalance: Math.round(cashBalance * 100) / 100,
-    totalPnl,
-    totalPnlPercent: Math.round(totalPnlPercent * 100) / 100,
-    dayChange: Math.round(dayChange * 100) / 100,
-    dayChangePercent: Math.round(dayChangePercent * 100) / 100,
-    holdingsCount: holdings.length,
-    bestPerformer: byPnl[0] ?? null,
-    worstPerformer: byPnl.length > 1 ? byPnl[byPnl.length - 1] : null,
-    holdings,
-  };
 }
 
 // ──────────────────────────── DEMO provider ──────────────────────────
@@ -71,16 +29,6 @@ const demoProvider: MarketDataProvider = {
   },
   async getPlayerBySlug(slug) {
     return mockGetPlayerBySlug(slug) ?? null;
-  },
-  async getPortfolio() {
-    const state = demoState();
-    const holdings: Holding[] = [];
-    for (const h of state.holdings.values()) {
-      const player = mockGetPlayerById(h.playerId);
-      if (!player) continue;
-      holdings.push(buildHolding(player, h.shares, h.averageBuyPrice, h.totalInvested));
-    }
-    return summarize(holdings, state.balance);
   },
 };
 
@@ -168,18 +116,43 @@ const prismaProvider: MarketDataProvider = {
     });
     return row ? mapDbPlayer(row) : null;
   },
-  async getPortfolio(userId) {
-    const [rows, user] = await Promise.all([
-      prisma.portfolio.findMany({ where: { userId }, include: { player: { include: { club: true, stats: { orderBy: { season: "desc" }, take: 1 } } } } }),
-      prisma.user.findUnique({ where: { id: userId } }),
-    ]);
-    const holdings = rows.map((r) =>
-      buildHolding(mapDbPlayer(r.player), r.shares, Number(r.averageBuyPrice), Number(r.totalInvested))
-    );
-    return summarize(holdings, Number(user?.virtualBalance ?? 0));
-  },
 };
 
-/** The active provider: Prisma when a database is configured, else demo. */
-export const marketData: MarketDataProvider = hasDatabase ? prismaProvider : demoProvider;
+/**
+ * Resilient wrapper: prefer Prisma, but if the DB is unreachable/slow (e.g.
+ * Supabase free-tier cold start) fall back to the deterministic mock layer so
+ * pages render instead of throwing a 500.
+ */
+function resilient(): MarketDataProvider {
+  const warn = (m: string, e: unknown) => console.error(`[market-data] ${m} — falling back to mock`, e);
+  return {
+    async getPlayers() {
+      try {
+        return await prismaProvider.getPlayers();
+      } catch (e) {
+        warn("getPlayers DB error", e);
+        return demoProvider.getPlayers();
+      }
+    },
+    async getPlayerById(id) {
+      try {
+        return await prismaProvider.getPlayerById(id);
+      } catch (e) {
+        warn("getPlayerById DB error", e);
+        return demoProvider.getPlayerById(id);
+      }
+    },
+    async getPlayerBySlug(slug) {
+      try {
+        return await prismaProvider.getPlayerBySlug(slug);
+      } catch (e) {
+        warn("getPlayerBySlug DB error", e);
+        return demoProvider.getPlayerBySlug(slug);
+      }
+    },
+  };
+}
+
+/** The active provider: resilient Prisma when a DB is configured, else demo. */
+export const marketData: MarketDataProvider = hasDatabase ? resilient() : demoProvider;
 export { demoProvider, prismaProvider };

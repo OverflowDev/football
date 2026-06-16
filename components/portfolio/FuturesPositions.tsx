@@ -11,7 +11,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 
 export function FuturesPositions() {
   const { data, isLoading } = useFuturesPositions();
-  const close = useCloseFuture();
+  const { close, closingId } = useCloseFuture();
   const positions = data?.positions ?? [];
 
   if (!isLoading && positions.length === 0) {
@@ -74,8 +74,8 @@ export function FuturesPositions() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  loading={close.isPending && close.variables?.positionId === p.id}
-                  onClick={() => close.mutate({ positionId: p.id })}
+                  loading={closingId === p.id}
+                  onClick={() => close(p.id)}
                 >
                   Close
                 </Button>

@@ -6,14 +6,12 @@ import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { useTrade } from "@/hooks/useTrade";
 import { useOnchainTrade } from "@/hooks/useOnchainTrade";
 import { useOpenFuture } from "@/hooks/useFutures";
-import { usePortfolio } from "@/hooks/usePortfolio";
 import { useStore } from "@/store";
 import { liquidationPrice } from "@/lib/futures-math";
 import { TRADING_FEE_RATE, cn, formatCurrency } from "@/lib/utils";
-import type { FuturesSide, Player, TradeKind, TradeMode } from "@/types";
+import type { FuturesSide, Player, TradeKind } from "@/types";
 
 const LEVERAGES = [1, 2, 5, 10];
 
@@ -45,15 +43,13 @@ export function TradePanel({ player }: { player: Player }) {
 }
 
 // ─────────────────────────────── Spot ────────────────────────────────
+// On-chain only: settles in USDC through the FootballMarket contract on Arc.
 function SpotForm({ player }: { player: Player }) {
-  const [mode, setMode] = useState<TradeMode>("VIRTUAL");
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [sharesStr, setSharesStr] = useState("10");
 
   const live = useStore((s) => s.livePrices[player.id]);
   const price = live?.price ?? player.currentPrice;
-  const { data: portfolioData } = usePortfolio();
-  const trade = useTrade();
   const onchain = useOnchainTrade();
   const { isConnected } = useAccount();
   const authenticated = useStore((s) => s.authenticated);
@@ -63,45 +59,27 @@ function SpotForm({ player }: { player: Player }) {
   const fee = Math.round(subtotal * TRADING_FEE_RATE * 100) / 100;
   const totalCost = side === "BUY" ? subtotal + fee : subtotal - fee;
 
-  const cashBalance = portfolioData?.portfolio.cashBalance ?? 0;
-  const holding = portfolioData?.portfolio.holdings.find((h) => h.player.id === player.id);
-  const ownedShares = holding?.shares ?? 0;
-
-  const priceImpact = useMemo(() => {
-    const float = player.sharesAvailable || 1;
-    return Math.min(100, (shares / float) * 100 * 50);
-  }, [shares, player.sharesAvailable]);
-
-  const balanceAfter = side === "BUY" ? cashBalance - totalCost : cashBalance + totalCost;
-  // virtual balance/holdings only constrain virtual trades; on-chain funds live in the wallet
-  const canAfford = mode === "ONCHAIN" ? true : side === "BUY" ? totalCost <= cashBalance : shares <= ownedShares;
+  const tokenized = !!player.contractAddress;
   const validShares = shares > 0;
-  const needsSignIn = mode === "ONCHAIN" && (!isConnected || !authenticated);
-  const busy = trade.isPending || onchain.pending;
+  const needsSignIn = !isConnected || !authenticated;
 
   const submit = () => {
-    if (!validShares || !canAfford || needsSignIn) return;
-    if (mode === "ONCHAIN") onchain.trade(player.id, side, shares);
-    else trade.mutate({ playerId: player.id, shares, mode, side });
+    if (!validShares || !tokenized || needsSignIn) return;
+    onchain.trade(player.id, side, shares);
   };
+
+  if (!tokenized) {
+    return (
+      <div className="rounded-lg border border-white/10 bg-surface/60 p-6 text-center text-sm text-content-secondary">
+        <Wallet className="mx-auto mb-2 h-5 w-5" />
+        {player.name} isn't tokenized on-chain yet, so spot trading isn't available. You can still
+        open a futures position on the Futures tab.
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg border border-white/10 p-1">
-        {(["VIRTUAL", "ONCHAIN"] as TradeMode[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={cn(
-              "rounded-md py-1.5 text-xs font-medium transition-colors",
-              mode === m ? "bg-white/10 text-content" : "text-content-secondary"
-            )}
-          >
-            {m === "VIRTUAL" ? "Virtual" : "On-Chain"}
-          </button>
-        ))}
-      </div>
-
       <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-white/10 p-1">
         <button
           onClick={() => setSide("BUY")}
@@ -132,22 +110,14 @@ function SpotForm({ player }: { player: Player }) {
         <Row label="Subtotal" value={formatCurrency(subtotal)} />
         <Row label={`Fee (${(TRADING_FEE_RATE * 100).toFixed(1)}%)`} value={formatCurrency(fee)} />
         <div className="my-1 border-t border-white/5" />
-        <Row label={side === "BUY" ? "Total cost" : "You receive"} value={formatCurrency(totalCost)} bold />
-        <Row label="Balance after" value={formatCurrency(Math.max(0, balanceAfter))} muted />
-        {side === "SELL" && <Row label="Shares owned" value={ownedShares.toLocaleString()} muted />}
+        <Row label={side === "BUY" ? "Total (USDC)" : "You receive (USDC)"} value={formatCurrency(totalCost)} bold />
+        <Row label="Settles" value="On-chain · Arc" muted />
       </div>
-
-      {priceImpact > 2 && validShares && (
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-gold/20 bg-gold/5 p-2.5 text-xs text-gold">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>High price impact (~{priceImpact.toFixed(1)}%). Large orders move the bonding curve.</span>
-        </div>
-      )}
 
       {needsSignIn && (
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs text-primary">
           <Wallet className="h-4 w-4" />
-          {!isConnected ? "Connect a wallet to trade on-chain." : "Sign in with your wallet to trade on-chain."}
+          {!isConnected ? "Connect a wallet to trade." : "Sign in with your wallet to trade."}
         </div>
       )}
 
@@ -156,15 +126,11 @@ function SpotForm({ player }: { player: Player }) {
         size="lg"
         variant={side === "BUY" ? "success" : "danger"}
         className="mt-4"
-        loading={busy}
-        disabled={!validShares || !canAfford || needsSignIn}
+        loading={onchain.pending}
+        disabled={!validShares || needsSignIn}
         onClick={submit}
       >
-        {!canAfford && validShares
-          ? side === "BUY"
-            ? "Insufficient balance"
-            : "Not enough shares"
-          : `${mode === "ONCHAIN" ? "On-chain " : ""}${side === "BUY" ? "Buy" : "Sell"} ${shares || ""} ${player.symbol}`}
+        {side === "BUY" ? "Buy" : "Sell"} {shares || ""} {player.symbol}
       </Button>
     </>
   );
@@ -178,8 +144,9 @@ function FuturesForm({ player }: { player: Player }) {
 
   const live = useStore((s) => s.livePrices[player.id]);
   const entry = live?.price ?? player.currentPrice;
-  const { data: portfolioData } = usePortfolio();
   const open = useOpenFuture();
+  const { isConnected } = useAccount();
+  const authenticated = useStore((s) => s.authenticated);
 
   const size = Math.max(0, Math.floor(Number(sizeStr) || 0));
   const notional = Math.round(size * entry * 100) / 100;
@@ -188,14 +155,23 @@ function FuturesForm({ player }: { player: Player }) {
   const liq = liquidationPrice(entry, side, leverage);
   const cost = margin + fee;
 
-  const cashBalance = portfolioData?.portfolio.cashBalance ?? 0;
-  const canAfford = cost <= cashBalance;
+  const tokenized = !!player.contractAddress;
   const valid = size > 0;
+  const needsSignIn = !isConnected || !authenticated;
 
   const submit = () => {
-    if (!valid || !canAfford) return;
-    open.mutate({ playerId: player.id, side, size, leverage });
+    if (!valid || needsSignIn || !tokenized) return;
+    open.open(player.id, side, size, leverage);
   };
+
+  if (!tokenized) {
+    return (
+      <div className="rounded-lg border border-white/10 bg-surface/60 p-6 text-center text-sm text-content-secondary">
+        <Wallet className="mx-auto mb-2 h-5 w-5" />
+        Futures are only available on tokenized players (those with an on-chain market).
+      </div>
+    );
+  }
 
   return (
     <>
@@ -246,12 +222,12 @@ function FuturesForm({ player }: { player: Player }) {
         <Row label="Notional" value={formatCurrency(notional)} />
         <Row label={`Fee (${(TRADING_FEE_RATE * 100).toFixed(1)}%)`} value={formatCurrency(fee)} />
         <div className="my-1 border-t border-white/5" />
-        <Row label="Margin required" value={formatCurrency(cost)} bold />
+        <Row label="Margin required (USDC)" value={formatCurrency(cost)} bold />
         <div className="flex items-center justify-between">
           <span className="text-content-secondary">Liquidation price</span>
           <span className="font-mono tabular-nums text-down">{formatCurrency(liq)}</span>
         </div>
-        <Row label="Balance after" value={formatCurrency(Math.max(0, cashBalance - cost))} muted />
+        <Row label="Settles" value="On-chain · Arc" muted />
       </div>
 
       {leverage >= 5 && valid && (
@@ -261,21 +237,24 @@ function FuturesForm({ player }: { player: Player }) {
         </div>
       )}
 
+      {needsSignIn && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-xs text-primary">
+          <Wallet className="h-4 w-4" />
+          {!isConnected ? "Connect a wallet to trade." : "Sign in with your wallet to trade."}
+        </div>
+      )}
+
       <Button
         fullWidth
         size="lg"
         variant={side === "LONG" ? "success" : "danger"}
         className="mt-4"
-        loading={open.isPending}
-        disabled={!valid || !canAfford}
+        loading={open.pending}
+        disabled={!valid || needsSignIn}
         onClick={submit}
       >
-        {!canAfford && valid ? "Insufficient margin" : (
-          <>
-            {side === "LONG" ? "Long" : "Short"} {leverage}x · {player.symbol}
-            <Badge variant={side === "LONG" ? "up" : "down"} className="ml-1">{size || 0}</Badge>
-          </>
-        )}
+        {side === "LONG" ? "Long" : "Short"} {leverage}x · {player.symbol}
+        <Badge variant={side === "LONG" ? "up" : "down"} className="ml-1">{size || 0}</Badge>
       </Button>
     </>
   );
