@@ -66,6 +66,13 @@ contract FootballMarket is Ownable, AccessControl, ReentrancyGuard {
         uint256 initialPrice
     );
 
+    /// @notice Emitted when an existing (e.g. IPO) token is listed on the market.
+    event ExternalTokenListed(
+        address indexed playerToken,
+        uint256 initialPrice,
+        uint256 inventory
+    );
+
     /// @notice Emitted when a user buys shares.
     event SharesBought(
         address indexed user,
@@ -144,6 +151,36 @@ contract FootballMarket is Ownable, AccessControl, ReentrancyGuard {
         allPlayerTokens.push(playerTokenAddr);
 
         emit PlayerTokenDeployed(playerTokenAddr, name, symbol, initialPrice);
+    }
+
+    /// @notice List an ALREADY-deployed player token (e.g. one distributed by an
+    ///         IPO) on the spot market and optionally seed sell-side inventory.
+    /// @dev    Pulls `inventory` tokens from the owner into the market as the
+    ///         market maker's stock (approve this contract first). USDC for
+    ///         buybacks is shared market-wide — fund the market separately.
+    /// @param playerToken Address of the existing PlayerToken to list.
+    /// @param initialPrice Opening price per whole share in USDC (6 decimals).
+    /// @param inventory   Shares (18dp) to pull from the owner as sell inventory.
+    function listExternalToken(
+        address playerToken,
+        uint256 initialPrice,
+        uint256 inventory
+    ) external onlyOwner {
+        if (playerToken == address(0)) revert ZeroAddress();
+        if (initialPrice == 0) revert ZeroPrice();
+        if (markets[playerToken].exists) revert MarketAlreadyExists("");
+
+        markets[playerToken] = PlayerMarket({
+            token: PlayerToken(playerToken),
+            price: initialPrice,
+            exists: true
+        });
+        allPlayerTokens.push(playerToken);
+
+        if (inventory > 0) {
+            IERC20(playerToken).safeTransferFrom(msg.sender, address(this), inventory);
+        }
+        emit ExternalTokenListed(playerToken, initialPrice, inventory);
     }
 
     // ──────────────────────────── Trading ─────────────────────────────

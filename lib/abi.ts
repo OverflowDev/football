@@ -48,6 +48,17 @@ export const FOOTBALL_MARKET_ABI = [
   },
   {
     type: "function",
+    name: "listExternalToken",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "playerToken", type: "address" },
+      { name: "initialPrice", type: "uint256" },
+      { name: "inventory", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "updatePrice",
     stateMutability: "nonpayable",
     inputs: [

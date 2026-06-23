@@ -74,4 +74,30 @@ describe("FootballMarket", () => {
       market.connect(user).buyShares(ethers.ZeroAddress, SHARES(1))
     ).to.be.revertedWithCustomError(market, "MarketNotFound");
   });
+
+  it("lists an external (IPO) token and makes it tradable", async () => {
+    // a standalone token owned by `owner`, as an IPO would leave it
+    const PlayerToken = await ethers.getContractFactory("PlayerToken");
+    const ext = await PlayerToken.deploy("IPO Star Shares", "$STAR", 99, owner.address);
+    await ext.waitForDeployment();
+    const extAddr = await ext.getAddress();
+    await ext.mint(owner.address, SHARES(500_000)); // inventory to seed
+
+    // list at 10 USDC/share, seed 500k shares of inventory
+    await ext.approve(await market.getAddress(), SHARES(500_000));
+    await market.listExternalToken(extAddr, USDC(10), SHARES(500_000));
+
+    expect(await market.getPlayerPrice(extAddr)).to.equal(USDC(10));
+    expect(await ext.balanceOf(await market.getAddress())).to.equal(SHARES(500_000));
+
+    // a user can now buy it on the spot market
+    await market.connect(user).buyShares(extAddr, SHARES(10));
+    expect(await ext.balanceOf(user.address)).to.equal(SHARES(10));
+  });
+
+  it("rejects listing a token that already has a market", async () => {
+    await expect(
+      market.listExternalToken(token, USDC(10), 0)
+    ).to.be.revertedWithCustomError(market, "MarketAlreadyExists");
+  });
 });

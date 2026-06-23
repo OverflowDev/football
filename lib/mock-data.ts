@@ -162,10 +162,10 @@ const PLAYER_SEEDS: PlayerSeed[] = [
 // Player tokens actually deployed on Arc Testnet (see deployments.json).
 // Keyed by slug; these players are tradable on-chain, the rest are virtual-only.
 const DEPLOYED_TOKENS: Record<string, { address: string; tokenId: number }> = {
-  "lamine-yamal": { address: "0x5195326808fc51326b489c5689698C53871bDaD2", tokenId: 1 },
-  "jude-bellingham": { address: "0xA4943d61Ca71c9fFB9cEb007B2Aa69ec1A8b7d4b", tokenId: 2 },
-  "victor-osimhen": { address: "0x538F0044A68739874b973018db3458C501872803", tokenId: 3 },
-  "erling-haaland": { address: "0x5e52568DD602bf00e9326e6D2B3C31E97649C0cC", tokenId: 4 },
+  "lamine-yamal": { address: "0x620eE09dcB5e97EA0feAb7Bf85dba6DdD480EbC9", tokenId: 1 },
+  "jude-bellingham": { address: "0xab20BdC4176935916e20581AdB0Ee0e2084489b5", tokenId: 2 },
+  "victor-osimhen": { address: "0xC81344Cd845E2f6013b49D09355184772738aC20", tokenId: 3 },
+  "erling-haaland": { address: "0x6410515ad665B1CBF7637f1dACac3F8f7a15C8Fa", tokenId: 4 },
 };
 
 /** Flat list of on-chain player tokens (slug + address) for chain reads. */

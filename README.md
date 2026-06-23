@@ -188,7 +188,8 @@ In `contracts/`:
 - **`FootballFutures.sol`** — leveraged long/short on player prices: USDC margin, 1–10×, P&L,
   `closePosition`, `liquidate()`. Reads mark prices from `FootballMarket`.
 - **`FootballIPO.sol`** — on-chain presale: `createSale` (pool of tokens) → `deposit` USDC →
-  clearing price = raised ÷ pool → `finalize` → pro-rata `claim`.
+  clearing price = raised ÷ pool → `finalize` → pro-rata `claim`. Claimed tokens become
+  spot-tradable via `FootballMarket.listExternalToken` (admin lists + seeds inventory).
 - **`PriceOracle.sol`** — auxiliary on-chain price feed (`ORACLE_ROLE`).
 - **`MockUSDC.sol`** — 6-decimal faucet token (local/Base-Sepolia only; **not** Arc).
 
@@ -212,8 +213,8 @@ Full walkthrough in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 | Contract | Address |
 | --- | --- |
-| FootballMarket | `0x8814FAf3eBA5684AB1deac17FFfb45AF334b9781` |
-| FootballFutures | `0xF6D58034ccF677c36183C346ff14ECd427628b23` |
+| FootballMarket | `0xA92bd443A078ed98184dB792E7A3846937a2f37E` |
+| FootballFutures | `0x4E27f853e1Acf170387AB7A99c91C50Cac3485e1` |
 | FootballIPO | `0x357aCA9f32F0CD7aa904aBE6468070EbD0eF8C20` |
 | PriceOracle | `0xe971d008A04739663be5B0Ad597fDf06569B5420` |
 | USDC (native) | `0x3600000000000000000000000000000000000000` |

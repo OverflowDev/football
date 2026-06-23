@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAccount } from "wagmi";
-import { Rocket, Bell, Clock, TrendingUp, Wallet, CheckCircle2 } from "lucide-react";
+import { Rocket, Bell, Clock, TrendingUp, Wallet, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,8 @@ import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
 import { AdminAddIpo } from "@/components/ipo/AdminAddIpo";
 import { useApi } from "@/hooks/useApi";
 import { useOnchainIpo } from "@/hooks/useIpo";
+import { useListOnMarket } from "@/hooks/useListOnMarket";
+import { isAdminWallet } from "@/lib/admin";
 import { useStore } from "@/store";
 import { POSITION_COLORS, cn, flagEmoji, formatCompactCurrency, formatCurrency, formatNumber, timeAgo } from "@/lib/utils";
 import type { IpoListing } from "@/types";
@@ -103,9 +105,10 @@ function Meta({ ipo }: { ipo: IpoListing }) {
 }
 
 function OnChainLiveCard({ ipo }: { ipo: IpoListing }) {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const authenticated = useStore((s) => s.authenticated);
   const { deposit, finalize, claim, busy } = useOnchainIpo();
+  const { listOnMarket, busy: listing } = useListOnMarket();
 
   const saleId = ipo.saleId ?? 0;
   const clearing = ipo.clearingPrice ?? ipo.ipoPrice;
@@ -114,6 +117,7 @@ function OnChainLiveCard({ ipo }: { ipo: IpoListing }) {
   const myShares = ipo.myShares ?? 0;
   const myContribution = ipo.myContribution ?? 0;
   const needsSignIn = !isConnected || !authenticated;
+  const isAdmin = isAdminWallet(address);
 
   const [sharesStr, setSharesStr] = useState("100");
   const [priceStr, setPriceStr] = useState(clearing.toFixed(2));
@@ -121,6 +125,10 @@ function OnChainLiveCard({ ipo }: { ipo: IpoListing }) {
   const price = Math.max(0, Number(priceStr) || 0);
   const amount = Math.round(shares * price * 100) / 100; // USDC to deposit
   const estShares = clearing > 0 ? Math.floor(amount / clearing) : 0;
+
+  // admin: list a finalized IPO token on the spot market
+  const [listPriceStr, setListPriceStr] = useState(clearing.toFixed(2));
+  const [listQtyStr, setListQtyStr] = useState("100000");
 
   return (
     <Card className="p-5">
@@ -227,6 +235,29 @@ function OnChainLiveCard({ ipo }: { ipo: IpoListing }) {
             <CheckCircle2 className="h-4 w-4 text-up" /> {ipo.myClaimed ? "Shares claimed" : "Sale finalized"}
           </p>
         )
+      )}
+
+      {/* admin: list the finalized IPO token on the spot market */}
+      {isAdmin && finalized && ipo.playerToken && (
+        <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+            <ShieldCheck className="h-3.5 w-3.5" /> Admin · List on spot market
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Input label="Price/share ($)" type="number" min={0} step="0.01" value={listPriceStr} onChange={(e) => setListPriceStr(e.target.value)} />
+            <Input label="Inventory (shares)" type="number" min={0} value={listQtyStr} onChange={(e) => setListQtyStr(e.target.value)} />
+          </div>
+          <Button
+            fullWidth
+            size="sm"
+            variant="secondary"
+            className="mt-2"
+            loading={listing}
+            onClick={() => listOnMarket(ipo.playerToken!, Number(listPriceStr) || 0, Number(listQtyStr) || 0)}
+          >
+            Mint inventory & list for spot trading
+          </Button>
+        </div>
       )}
 
       <p className="mt-2 text-center text-[11px] text-content-secondary">

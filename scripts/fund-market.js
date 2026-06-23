@@ -22,21 +22,31 @@ async function main() {
   if (!usdcAddr) throw new Error("Set NEXT_PUBLIC_USDC_ADDRESS in .env");
 
   const amountHuman = Number(process.env.FUND_USDC || "100");
+  const gasBuffer = Number(process.env.GAS_BUFFER_USDC || "3"); // keep some USDC for gas
   const usdc = new hre.ethers.Contract(usdcAddr, ERC20_ABI, signer);
   const decimals = await usdc.decimals().catch(() => 6);
-  const amount = hre.ethers.parseUnits(String(amountHuman), decimals);
 
   const bal = await usdc.balanceOf(signer.address);
+  const balHuman = Number(hre.ethers.formatUnits(bal, decimals));
   console.log(`Deployer ${signer.address}`);
-  console.log(`USDC balance: ${hre.ethers.formatUnits(bal, decimals)}`);
-  if (bal < amount) {
+  console.log(`USDC balance: ${balHuman}`);
+
+  // Best-effort: never spend the gas buffer; seed min(requested, balance - buffer).
+  let seedHuman = amountHuman;
+  const maxSeed = Math.floor((balHuman - gasBuffer) * 1e6) / 1e6;
+  if (maxSeed <= 0) {
     throw new Error(
-      `Not enough USDC. Need ${amountHuman}, have ${hre.ethers.formatUnits(bal, decimals)}. ` +
-        `Get more at https://faucet.circle.com (Arc Testnet).`
+      `Balance too low to seed (have ${balHuman}, keep ${gasBuffer} for gas). ` +
+        `Top up at https://faucet.circle.com (Arc Testnet).`
     );
   }
+  if (seedHuman > maxSeed) {
+    console.warn(`⚠️  Seeding ${maxSeed} USDC (capped to balance − ${gasBuffer} gas buffer; requested ${amountHuman}).`);
+    seedHuman = maxSeed;
+  }
+  const amount = hre.ethers.parseUnits(String(seedHuman), decimals);
 
-  console.log(`Transferring ${amountHuman} USDC -> FootballMarket ${market} …`);
+  console.log(`Transferring ${seedHuman} USDC -> FootballMarket ${market} …`);
   const tx = await usdc.transfer(market, amount);
   await tx.wait();
 
