@@ -56,7 +56,13 @@ data. To **trade**, connect a wallet (RainbowKit), sign in, and use the on-chain
    npm run prisma:generate
    npm run prisma:push      # create tables
    npm run prisma:seed      # load 18 clubs, 50 players, news
+   # IMPORTANT (Supabase): lock down the public REST API after any push
+   npx prisma db execute --file prisma/enable-rls.sql --schema prisma/schema.prisma
    ```
+   `enable-rls.sql` turns on Row-Level Security for every table. Supabase exposes a public
+   PostgREST API; with RLS off, anyone with the anon key could read/write your data. RLS-enabled
+   (with no policies) denies that API, while Prisma (the owner role) bypasses RLS and keeps
+   working. **Re-run it after any `prisma:push` that adds tables.**
    See [DATABASE.md](DATABASE.md) for the Supabase IPv4 pooler details.
 3. **Football data (optional):** `API_FOOTBALL_KEY` (api-sports.io) + `NEWS_API_KEY` (newsapi.org).
 4. **Realtime (optional):** run the socket server and set `NEXT_PUBLIC_SOCKET_URL`:
@@ -121,11 +127,38 @@ Price = BaseValue × (1 + (FormRating + RumorScore − InjuryPenalty)/100) × (D
 
 ---
 
-## IPO Center (`/ipo`)
+## IPO Center (`/ipo`) — on-chain presale
 
-An "Initial Player Offering" hub: **Upcoming** (follow), **Live** (IPO price, shares-sold progress,
-countdown), and **Recently Listed** (IPO→now gain). New players fair-launch at a fixed price and
-the market reprices from there. Data in `lib/ipo.ts`, served via `/api/ipo`.
+An "Initial Player Offering" hub. **Live offerings are fully on-chain** via **`FootballIPO`**, run
+as a proportional fair launch:
+
+- A fixed pool of player shares is offered with a deadline.
+- Buyers **bid shares at a price** → deposit `shares × price` USDC into the contract.
+- The **price/token is the clearing price set collectively by all demand** (`raised ÷ pool`), and
+  final allocation is **pro-rata** to each buyer's deposit.
+- After close, anyone can `finalize`, then buyers `claim` their shares.
+
+The card shows the live clearing price, total raised, your deposit + allocation, and claim state —
+all read live from the chain (`lib/onchain-ipo.ts` → `/api/ipo`). **Upcoming** and **Recently
+Listed** rows are off-chain listing metadata (`lib/ipo.ts`). Open sales with `npm run deploy:ipo`.
+
+### Adding a new IPO
+
+Two steps — open the sale on the **existing** contract (no redeploy), then register its metadata:
+
+```bash
+# 1. open a sale on the existing FootballIPO
+IPO_NAME="Lamine Yamal" IPO_SYMBOL='$YAMAL2' IPO_CLUB="FC Barcelona" \
+IPO_POS=FWD IPO_NAT=es IPO_POOL=1000000 IPO_DAYS=7 npm run add:ipo
+```
+
+It prints a ready-to-paste line. **2.** add it to `ON_CHAIN_SALES` in `lib/ipo.ts`:
+
+```ts
+{ saleId: 3, playerToken: "0x…", name: "Lamine Yamal", club: "FC Barcelona", position: "FWD", nat: "es" },
+```
+
+Redeploy the frontend and the new offering shows up live.
 
 ---
 
@@ -148,6 +181,8 @@ In `contracts/`:
   `AccessControl` + `ReentrancyGuard`, full NatSpec.
 - **`FootballFutures.sol`** — leveraged long/short on player prices: USDC margin, 1–10×, P&L,
   `closePosition`, `liquidate()`. Reads mark prices from `FootballMarket`.
+- **`FootballIPO.sol`** — on-chain presale: `createSale` (pool of tokens) → `deposit` USDC →
+  clearing price = raised ÷ pool → `finalize` → pro-rata `claim`.
 - **`PriceOracle.sol`** — auxiliary on-chain price feed (`ORACLE_ROLE`).
 - **`MockUSDC.sol`** — 6-decimal faucet token (local/Base-Sepolia only; **not** Arc).
 
@@ -173,6 +208,7 @@ Full walkthrough in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 | --- | --- |
 | FootballMarket | `0x8814FAf3eBA5684AB1deac17FFfb45AF334b9781` |
 | FootballFutures | `0xF6D58034ccF677c36183C346ff14ECd427628b23` |
+| FootballIPO | `0x357aCA9f32F0CD7aa904aBE6468070EbD0eF8C20` |
 | PriceOracle | `0xe971d008A04739663be5B0Ad597fDf06569B5420` |
 | USDC (native) | `0x3600000000000000000000000000000000000000` |
 | $YAMAL | `0x5195326808fc51326b489c5689698C53871bDaD2` |
@@ -210,6 +246,7 @@ server/                  # standalone Socket.io server
 | `npm run hardhat:compile` | Compile contracts |
 | `npm run hardhat:deploy:arc` | Deploy all contracts to Arc Testnet |
 | `npm run deploy:futures` / `fund:futures` | Deploy + fund FootballFutures |
+| `npm run deploy:ipo` | Deploy FootballIPO + open on-chain presales |
 
 ---
 

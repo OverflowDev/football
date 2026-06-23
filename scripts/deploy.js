@@ -79,6 +79,14 @@ async function main() {
   const futuresAddress = await futures.getAddress();
   console.log("  ✓ FootballFutures:", futuresAddress);
 
+  // 3c. FootballIPO (on-chain presales). Open sales with: npm run deploy:ipo
+  console.log("  Deploying FootballIPO…");
+  const FootballIPO = await hre.ethers.getContractFactory("FootballIPO");
+  const ipo = await FootballIPO.deploy(usdcAddress, deployer.address);
+  await ipo.waitForDeployment();
+  const ipoAddress = await ipo.getAddress();
+  console.log("  ✓ FootballIPO:", ipoAddress);
+
   // 4. Launch a few player tokens
   console.log("  Launching player tokens…");
   const deployed = [];
@@ -106,6 +114,7 @@ async function main() {
     priceOracle: oracleAddress,
     footballMarket: marketAddress,
     footballFutures: futuresAddress,
+    footballIPO: ipoAddress,
     players: deployed,
     deployedAt: new Date().toISOString(),
   };
@@ -114,7 +123,9 @@ async function main() {
   console.log("\nSet in your .env:");
   console.log(`  NEXT_PUBLIC_FOOTBALL_MARKET_ADDRESS=${marketAddress}`);
   console.log(`  NEXT_PUBLIC_FOOTBALL_FUTURES_ADDRESS=${futuresAddress}`);
+  console.log(`  NEXT_PUBLIC_FOOTBALL_IPO_ADDRESS=${ipoAddress}`);
   console.log(`  NEXT_PUBLIC_USDC_ADDRESS=${usdcAddress}`);
+  console.log("\nThen open IPO sales with:  npm run deploy:ipo");
 }
 
 main().catch((err) => {
