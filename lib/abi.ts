@@ -166,6 +166,83 @@ export const FOOTBALL_FUTURES_ABI = [
   },
 ] as const;
 
+export const FOOTBALL_IPO_ABI = [
+  {
+    type: "function",
+    name: "sales",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [
+      { name: "playerToken", type: "address" },
+      { name: "sharesForSale", type: "uint256" },
+      { name: "endsAt", type: "uint64" },
+      { name: "totalRaised", type: "uint256" },
+      { name: "finalized", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "clearingPrice",
+    stateMutability: "view",
+    inputs: [{ name: "saleId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "allocationOf",
+    stateMutability: "view",
+    inputs: [
+      { name: "saleId", type: "uint256" },
+      { name: "user", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "contributions",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256" },
+      { name: "", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "claimed",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256" },
+      { name: "", type: "address" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "saleId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "finalize",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "saleId", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "claim",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "saleId", type: "uint256" }],
+    outputs: [],
+  },
+] as const;
+
 export const ERC20_ABI = [
   {
     type: "function",

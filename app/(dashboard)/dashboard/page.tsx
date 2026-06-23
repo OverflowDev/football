@@ -17,7 +17,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-content-secondary">FPI market overview · on-chain trading on Arc</p>
+        <p className="text-sm text-content-secondary">Market overview · on-chain trading on Arc</p>
       </div>
 
       {statsData ? <MarketStats stats={statsData.stats} /> : <Skeleton className="h-24 w-full" />}

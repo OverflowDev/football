@@ -11,10 +11,11 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AuroraBackground } from "@/components/landing/AuroraBackground";
+import { SokaMark } from "@/components/brand/SokaLogo";
 
 export const metadata: Metadata = {
-  title: "Docs · FPI — Football Performance Index",
-  description: "What FPI is, how we built it, and how it works.",
+  title: "Docs · soka",
+  description: "What soka is, how we built it, and how it works.",
 };
 
 const TOC = [
@@ -63,10 +64,8 @@ export default function DocsPage() {
       <header className="sticky top-0 z-30 border-b border-white/5 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-display text-lg font-bold">FPI</span>
+            <SokaMark size={30} />
+            <span className="font-display text-lg font-bold lowercase">soka</span>
             <span className="ml-1 rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-content-secondary">
               Docs
             </span>
@@ -110,10 +109,10 @@ export default function DocsPage() {
         <article className="max-w-3xl space-y-14">
           <header>
             <h1 className="font-display text-4xl font-bold tracking-tight">
-              FPI <span className="text-gradient">Documentation</span>
+soka <span className="text-gradient">Documentation</span>
             </h1>
             <p className="mt-3 text-lg text-content-secondary">
-              FPI — the Football Performance Index — is a stock market for football players.
+              soka is a stock market for football players.
               You trade shares of real players like stocks; prices move with form, transfers
               and market demand, with leveraged futures and on-chain settlement on the Arc network.
             </p>
@@ -121,7 +120,7 @@ export default function DocsPage() {
 
           <Section id="overview" icon={<TrendingUp className="h-5 w-5 text-up" />} title="What we built">
             <p>
-              FPI turns each footballer into a tradable asset. Tokenized players are real ERC-20
+              soka turns each footballer into a tradable asset. Tokenized players are real ERC-20
               tokens on Arc; you trade them <strong>on-chain in USDC</strong> by connecting and
               signing in with a wallet. There's no virtual/paper money — value is settled on-chain.
             </p>
@@ -141,7 +140,7 @@ export default function DocsPage() {
             <Pre>{`Football data (API-Football, NewsAPI)
         │
         ▼
-FPI pricing engine  ──►  Postgres (prices, history, news)
+soka pricing engine ──►  Postgres (prices, history, news)
         │                         ▲
         ▼                         │
   price:update  ──►  Socket.io  ──► live UI (flashing prices, ticker)
@@ -157,7 +156,7 @@ FPI pricing engine  ──►  Postgres (prices, history, news)
           </Section>
 
           <Section id="pricing" icon={<TrendingUp className="h-5 w-5 text-up" />} title="The pricing engine">
-            <p>The canonical FPI price formula (<code>lib/pricing-engine.ts</code>):</p>
+            <p>The canonical soka price formula (<code>lib/pricing-engine.ts</code>):</p>
             <Pre>{`Price = BaseValue
       × (1 + (FormRating + RumorScore − InjuryPenalty) / 100)
       × (Demand / Supply)`}</Pre>

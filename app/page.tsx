@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Activity,
   TrendingUp,
   Coins,
   ArrowRight,
@@ -15,6 +14,7 @@ import {
 import { AuroraBackground } from "@/components/landing/AuroraBackground";
 import { HeroPreview } from "@/components/landing/HeroPreview";
 import { LandingTicker } from "@/components/landing/LandingTicker";
+import { SokaLogo } from "@/components/brand/SokaLogo";
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -24,7 +24,7 @@ const fadeUp = {
 const FEATURES = [
   {
     icon: <TrendingUp className="h-5 w-5 text-up" />,
-    title: "Dynamic FPI pricing",
+    title: "Dynamic price discovery",
     body: "Prices recompute from form, transfer rumors and a live bonding curve — every buy and sell moves the market in real time.",
     ring: "hover:border-up/30",
   },
@@ -75,12 +75,7 @@ export default function LandingPage() {
       {/* nav */}
       <header className="sticky top-0 z-30">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/30">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-display text-lg font-bold tracking-tight">FPI</span>
-          </div>
+          <SokaLogo size={32} />
           <nav className="flex items-center gap-1 sm:gap-2">
             <Link
               href="/docs"
@@ -244,7 +239,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-white/5 py-8 text-center text-xs text-content-secondary">
-        FPI — Football Performance Index. Demo platform · virtual currency · not investment advice.
+        soka — the stock market for football players. Testnet platform · settles in USDC on Arc · not investment advice.
       </footer>
     </div>
   );

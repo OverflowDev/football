@@ -13,10 +13,10 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "FPI — Football Performance Index",
+  title: "soka — the stock market for football players",
   description:
-    "Trade shares of real football players like stocks. AI analytics, live prices, and on-chain trading on Arc.",
-  keywords: ["football", "stock market", "trading", "AI", "web3", "Arc", "USDC", "FPI"],
+    "Trade shares of real football players like stocks. Leveraged futures, live prices, and on-chain settlement in USDC on Arc.",
+  keywords: ["soka", "football", "stock market", "trading", "web3", "Arc", "USDC", "futures"],
 };
 
 export const viewport: Viewport = {

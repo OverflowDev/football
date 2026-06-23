@@ -35,7 +35,7 @@ export function HeroPreview() {
             <span className="text-sm font-semibold">Live Market</span>
           </div>
           <span className="flex items-center gap-1 text-xs text-content-secondary">
-            <Activity className="h-3.5 w-3.5 text-primary" /> FPI · Arc
+            <Activity className="h-3.5 w-3.5 text-primary" /> soka · Arc
           </span>
         </div>
 

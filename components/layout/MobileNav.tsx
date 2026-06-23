@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, X } from "lucide-react";
+import { X } from "lucide-react";
+import { SokaLogo } from "@/components/brand/SokaLogo";
 import { MOBILE_NAV_ITEMS, NAV_ITEMS } from "@/components/layout/nav-config";
 import { useStore } from "@/store";
 import { cn } from "@/lib/utils";
@@ -56,12 +57,7 @@ export function MobileNav() {
               className="absolute inset-y-0 left-0 w-72 border-r border-white/5 bg-surface p-4"
             >
               <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                    <Activity className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="font-display font-bold">FPI</span>
-                </div>
+                <SokaLogo size={30} />
                 <button onClick={() => setOpen(false)} aria-label="Close menu">
                   <X className="h-5 w-5 text-content-secondary" />
                 </button>

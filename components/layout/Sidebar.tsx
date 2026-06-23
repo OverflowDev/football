@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Activity, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
+import { SokaMark } from "@/components/brand/SokaLogo";
 import { NAV_ITEMS } from "@/components/layout/nav-config";
 import { cn } from "@/lib/utils";
 
@@ -13,13 +14,11 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/5 bg-surface/60 backdrop-blur-xl lg:flex">
-      <div className="flex h-16 items-center gap-2 px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <Activity className="h-5 w-5 text-white" />
-        </div>
+      <div className="flex h-16 items-center gap-2.5 px-6">
+        <SokaMark size={32} />
         <div className="leading-tight">
-          <p className="font-display text-sm font-bold tracking-tight">FPI</p>
-          <p className="text-[10px] text-content-secondary">Performance Index</p>
+          <p className="font-display text-base font-bold lowercase tracking-tight">soka</p>
+          <p className="text-[10px] text-content-secondary">football market</p>
         </div>
       </div>
 

@@ -1,23 +1,49 @@
-// IPO ("Initial Player Offering") listings. Deterministic demo data:
-//  - UPCOMING: prospects listing soon (follow / get notified)
-//  - LIVE: currently in their offering window (reserve shares, progress bar)
-//  - RECENT: just entered the market — links to the tradable player
+// IPO ("Initial Player Offering") listings.
 //
-// Newly listed players use a fixed launch price; the market reprices from there.
+// LIVE offerings are run as a crypto-style PRESALE: there's a fixed pool of
+// shares, and buyers commit (shares, price) bids. The price/token is not fixed
+// — it's the volume-weighted "clearing price" set by ALL buyers' commitments
+// (raised ÷ shares committed). The more (and higher) buyers commit, the higher
+// the price everyone is discovering.
+//
+// Commitments live in an in-memory store (the IPO layer is demo/off-chain), so
+// they persist across requests within a running server.
 
 import { getAllPlayers } from "@/lib/mock-data";
-import type { IpoListing, Position } from "@/types";
+import type { IpoCommitment, IpoListing, Position } from "@/types";
 
-const IPO_LAUNCH_PRICE = 10; // every new player IPOs at the same fair-launch price
+const IPO_LAUNCH_PRICE = 10; // starting reference price for new listings
 
-function avatar(name: string) {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&bold=true&size=128`;
+// ── on-chain presales (FootballIPO) ───────────────────────────────────
+export const FOOTBALL_IPO_ADDRESS = process.env.NEXT_PUBLIC_FOOTBALL_IPO_ADDRESS || "";
+
+export interface OnChainSale {
+  saleId: number;
+  playerToken: string;
+  name: string;
+  club: string;
+  position: Position;
+  nat: string;
 }
 
+// Sales opened by scripts/deploy-ipo.js (see deployments.json).
+export const ON_CHAIN_SALES: OnChainSale[] = [
+  { saleId: 1, playerToken: "0x847FFd0ba93374Fda047cC63dcbED82d71f16738", name: "Rodrigo Mora", club: "FC Porto", position: "FWD", nat: "pt" },
+  { saleId: 2, playerToken: "0x885Afcc0c236fb10ffA1Eda220d75403bdCa4f58", name: "Mathys Tel", club: "Tottenham Hotspur", position: "FWD", nat: "fr" },
+];
+
+/** True when on-chain presales are configured (use the contract, not the demo pool). */
+export const ipoOnChain = !!FOOTBALL_IPO_ADDRESS && ON_CHAIN_SALES.length > 0;
+
+export function ipoAvatar(name: string) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&bold=true&size=128`;
+}
+const avatar = ipoAvatar;
 function daysFromNow(d: number) {
   return new Date(Date.now() + d * 86400000).toISOString();
 }
 
+// ── upcoming ──────────────────────────────────────────────────────────
 const UPCOMING: { name: string; club: string; position: Position; nat: string; inDays: number }[] = [
   { name: "Estêvão Willian", club: "Chelsea", position: "FWD", nat: "br", inDays: 3 },
   { name: "Kendry Páez", club: "Chelsea", position: "MID", nat: "ec", inDays: 5 },
@@ -25,12 +51,99 @@ const UPCOMING: { name: string; club: string; position: Position; nat: string; i
   { name: "Chido Obi", club: "Manchester United", position: "FWD", nat: "dk", inDays: 12 },
 ];
 
-const LIVE: { name: string; club: string; position: Position; nat: string; total: number; sold: number; endsInDays: number }[] = [
-  { name: "Rodrigo Mora", club: "FC Porto", position: "FWD", nat: "pt", total: 1_000_000, sold: 652_000, endsInDays: 2 },
-  { name: "Mathys Tel", club: "Tottenham Hotspur", position: "FWD", nat: "fr", total: 1_000_000, sold: 318_000, endsInDays: 4 },
+// ── live presales ───────────────────────────────────────────────────────
+interface LiveSeed {
+  name: string;
+  club: string;
+  position: Position;
+  nat: string;
+  endsInDays: number;
+  sharesForSale: number;
+  seed: IpoCommitment[]; // initial commitments so price discovery has started
+}
+
+const LIVE: LiveSeed[] = [
+  {
+    name: "Rodrigo Mora",
+    club: "FC Porto",
+    position: "FWD",
+    nat: "pt",
+    endsInDays: 2,
+    sharesForSale: 1_000_000,
+    seed: [
+      { shares: 180_000, price: 10 },
+      { shares: 160_000, price: 10.5 },
+      { shares: 140_000, price: 11.25 },
+      { shares: 90_000, price: 12 },
+      { shares: 80_000, price: 12.5 },
+    ],
+  },
+  {
+    name: "Mathys Tel",
+    club: "Tottenham Hotspur",
+    position: "FWD",
+    nat: "fr",
+    endsInDays: 4,
+    sharesForSale: 1_000_000,
+    seed: [
+      { shares: 120_000, price: 9.5 },
+      { shares: 110_000, price: 10 },
+      { shares: 60_000, price: 10.75 },
+      { shares: 40_000, price: 11.5 },
+    ],
+  },
 ];
 
-export function getIpos(): IpoListing[] {
+const liveId = (i: number) => `ipo_live_${i}`;
+
+// ── in-memory commitments store ───────────────────────────────────────
+interface CommitmentRec extends IpoCommitment {
+  wallet: string; // lowercased wallet address, or "anon"
+}
+
+const globalForIpo = globalThis as unknown as {
+  __fpiIpo?: Record<string, CommitmentRec[]>;
+};
+
+function store(): Record<string, CommitmentRec[]> {
+  if (!globalForIpo.__fpiIpo) {
+    const seeded: Record<string, CommitmentRec[]> = {};
+    LIVE.forEach((l, i) => (seeded[liveId(i)] = l.seed.map((c) => ({ ...c, wallet: "seed" }))));
+    globalForIpo.__fpiIpo = seeded;
+  }
+  return globalForIpo.__fpiIpo;
+}
+
+function aggregate(id: string) {
+  const commitments = store()[id] ?? [];
+  const sharesCommitted = commitments.reduce((s, c) => s + c.shares, 0);
+  const raised = Math.round(commitments.reduce((s, c) => s + c.shares * c.price, 0) * 100) / 100;
+  const clearingPrice = sharesCommitted > 0 ? Math.round((raised / sharesCommitted) * 100) / 100 : IPO_LAUNCH_PRICE;
+  // distinct contributing wallets (seed counted as one cohort)
+  const contributors = new Set(commitments.map((c) => c.wallet)).size;
+  return { sharesCommitted, raised, clearingPrice, contributors };
+}
+
+function myAggregate(id: string, wallet: string | null) {
+  if (!wallet) return { myShares: 0, myContribution: 0, myAvgPrice: 0 };
+  const w = wallet.toLowerCase();
+  const mine = (store()[id] ?? []).filter((c) => c.wallet === w);
+  const myShares = mine.reduce((s, c) => s + c.shares, 0);
+  const myContribution = Math.round(mine.reduce((s, c) => s + c.shares * c.price, 0) * 100) / 100;
+  const myAvgPrice = myShares > 0 ? Math.round((myContribution / myShares) * 100) / 100 : 0;
+  return { myShares, myContribution, myAvgPrice };
+}
+
+/** Record a presale commitment (a bid of `shares` at `price`) for a wallet. */
+export function commitToIpo(id: string, shares: number, price: number, wallet: string | null) {
+  const live = LIVE.findIndex((_, i) => liveId(i) === id);
+  if (live === -1) return { ok: false as const, error: "Offering not found" };
+  if (shares <= 0 || price <= 0) return { ok: false as const, error: "Enter a valid amount and price" };
+  store()[id].push({ shares: Math.floor(shares), price, wallet: (wallet ?? "anon").toLowerCase() });
+  return { ok: true as const, aggregate: aggregate(id), mine: myAggregate(id, wallet) };
+}
+
+export function getIpos(wallet: string | null = null): IpoListing[] {
   const out: IpoListing[] = [];
 
   UPCOMING.forEach((u, i) => {
@@ -48,8 +161,10 @@ export function getIpos(): IpoListing[] {
   });
 
   LIVE.forEach((l, i) => {
+    const agg = aggregate(liveId(i));
+    const mine = myAggregate(liveId(i), wallet);
     out.push({
-      id: `ipo_live_${i}`,
+      id: liveId(i),
       name: l.name,
       club: l.club,
       position: l.position,
@@ -57,13 +172,18 @@ export function getIpos(): IpoListing[] {
       imageUrl: avatar(l.name),
       status: "LIVE",
       ipoPrice: IPO_LAUNCH_PRICE,
-      sharesTotal: l.total,
-      sharesSold: l.sold,
       endsAt: daysFromNow(l.endsInDays),
+      sharesForSale: l.sharesForSale,
+      sharesCommitted: agg.sharesCommitted,
+      raised: agg.raised,
+      clearingPrice: agg.clearingPrice,
+      contributors: agg.contributors,
+      myShares: mine.myShares,
+      myContribution: mine.myContribution,
+      myAvgPrice: mine.myAvgPrice,
     });
   });
 
-  // Recently listed → a few of our youngest tradable players, shown as IPO graduates.
   const young = getAllPlayers()
     .filter((p) => p.age <= 21)
     .slice(0, 4);

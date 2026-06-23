@@ -1,4 +1,4 @@
-# FPI — Football Performance Index
+# soka
 
 A **stock market for football players**. Trade shares of real players like stocks — **on-chain
 in USDC on the Arc network** (Circle's EVM chain, where USDC is the native gas token) — with
@@ -104,7 +104,7 @@ Your **Portfolio** shows on-chain spot holdings (read from the wallet), open fut
 
 ## Pricing engine
 
-`lib/pricing-engine.ts` implements the canonical FPI formula:
+`lib/pricing-engine.ts` implements the canonical soka formula:
 
 ```
 Price = BaseValue × (1 + (FormRating + RumorScore − InjuryPenalty)/100) × (Demand/Supply)

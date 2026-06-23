@@ -26,7 +26,7 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const player = await fetchPlayer(params.slug);
-  return { title: player ? `${player.name} (${player.symbol}) · FPI` : "Player · FPI" };
+  return { title: player ? `${player.name} (${player.symbol}) · soka` : "Player · soka" };
 }
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {

@@ -260,17 +260,35 @@ export interface IpoListing {
   nationalityCode: string;
   imageUrl: string;
   status: IpoStatus;
-  ipoPrice: number;
+  ipoPrice: number; // starting reference price
   // upcoming
   listingDate?: string;
-  // live
-  sharesTotal?: number;
-  sharesSold?: number;
+  // live presale — buyers commit (shares, price); the clearing price is emergent
+  sharesForSale?: number; // pool size
+  sharesCommitted?: number; // total shares buyers have committed
+  raised?: number; // total USDC committed (Σ shares × price)
+  clearingPrice?: number; // volume-weighted price/token set by all buyers
+  contributors?: number;
   endsAt?: string;
+  // per-request: the signed-in wallet's own commitments to this offering
+  myShares?: number;
+  myContribution?: number;
+  myAvgPrice?: number;
+  // on-chain presale (FootballIPO)
+  isOnChain?: boolean;
+  saleId?: number;
+  playerToken?: string;
+  finalized?: boolean;
+  myClaimed?: boolean;
   // recent — links to a tradable player
   slug?: string;
   currentPrice?: number;
   gainPercent?: number;
+}
+
+export interface IpoCommitment {
+  shares: number;
+  price: number;
 }
 
 export interface MarketStats {

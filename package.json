@@ -24,6 +24,7 @@
     "fund:market": "hardhat run scripts/fund-market.js --network arcTestnet",
     "deploy:futures": "hardhat run scripts/deploy-futures.js --network arcTestnet",
     "fund:futures": "hardhat run scripts/fund-futures.js --network arcTestnet",
+    "deploy:ipo": "hardhat run scripts/deploy-ipo.js --network arcTestnet",
     "hardhat:verify:arc": "hardhat verify --network arcTestnet",
     "hardhat:deploy:sepolia": "hardhat run scripts/deploy.js --network baseSepolia",
     "hardhat:deploy:base": "hardhat run scripts/deploy.js --network base"

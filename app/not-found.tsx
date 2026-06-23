@@ -6,7 +6,7 @@ export default function NotFound() {
       <p className="font-display text-6xl font-bold text-primary">404</p>
       <h1 className="font-display text-xl font-semibold">Page not found</h1>
       <p className="text-sm text-content-secondary">
-        That player or page doesn&apos;t exist on the FPI market.
+        That player or page doesn&apos;t exist on the soka market.
       </p>
       <Link
         href="/dashboard"
