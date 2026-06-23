@@ -169,6 +169,24 @@ export const FOOTBALL_FUTURES_ABI = [
 export const FOOTBALL_IPO_ABI = [
   {
     type: "function",
+    name: "nextSaleId",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "createSale",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "playerToken", type: "address" },
+      { name: "sharesForSale", type: "uint256" },
+      { name: "endsAt", type: "uint64" },
+    ],
+    outputs: [{ name: "saleId", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "sales",
     stateMutability: "view",
     inputs: [{ name: "", type: "uint256" }],

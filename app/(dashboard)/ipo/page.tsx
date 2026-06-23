@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PlayerAvatar } from "@/components/shared/PlayerAvatar";
+import { AdminAddIpo } from "@/components/ipo/AdminAddIpo";
 import { useApi } from "@/hooks/useApi";
 import { useOnchainIpo } from "@/hooks/useIpo";
 import { useStore } from "@/store";
@@ -37,6 +38,9 @@ export default function IpoPage() {
           </p>
         </div>
       </div>
+
+      {/* deployer-only: create a new on-chain IPO */}
+      <AdminAddIpo />
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />

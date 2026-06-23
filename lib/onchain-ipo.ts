@@ -3,19 +3,46 @@
 
 import { arcPublicClient } from "@/lib/onchain";
 import { FOOTBALL_IPO_ABI } from "@/lib/abi";
-import { FOOTBALL_IPO_ADDRESS, ON_CHAIN_SALES, IPO_LAUNCH_PRICE, ipoAvatar } from "@/lib/ipo";
-import type { IpoListing } from "@/types";
+import { FOOTBALL_IPO_ADDRESS, ON_CHAIN_SALES, IPO_LAUNCH_PRICE, ipoAvatar, type OnChainSale } from "@/lib/ipo";
+import { prisma } from "@/lib/prisma";
+import { hasDatabase } from "@/lib/config";
+import type { IpoListing, Position } from "@/types";
 
 const IPO = FOOTBALL_IPO_ADDRESS as `0x${string}`;
 
 type SaleTuple = readonly [string, bigint, bigint, bigint, boolean]; // playerToken, sharesForSale, endsAt, totalRaised, finalized
 
+/** Static seed sales overlaid with DB rows (admin-created offerings). */
+async function getSaleMetas(): Promise<OnChainSale[]> {
+  const map = new Map<number, OnChainSale>();
+  ON_CHAIN_SALES.forEach((s) => map.set(s.saleId, s));
+  if (hasDatabase) {
+    try {
+      const rows = await prisma.ipoSale.findMany();
+      rows.forEach((r) =>
+        map.set(r.saleId, {
+          saleId: r.saleId,
+          playerToken: r.playerToken,
+          name: r.name,
+          club: r.club,
+          position: r.position as Position,
+          nat: r.nat,
+        })
+      );
+    } catch {
+      // DB unreachable — fall back to static seeds
+    }
+  }
+  return [...map.values()].sort((a, b) => a.saleId - b.saleId);
+}
+
 export async function getOnChainIpos(wallet: string | null): Promise<IpoListing[]> {
   if (!FOOTBALL_IPO_ADDRESS) return [];
   const w = wallet && /^0x[a-fA-F0-9]{40}$/.test(wallet) ? (wallet as `0x${string}`) : null;
 
+  const metas = await getSaleMetas();
   const out: IpoListing[] = [];
-  for (const meta of ON_CHAIN_SALES) {
+  for (const meta of metas) {
     try {
       const [sale, clearing] = await Promise.all([
         arcPublicClient.readContract({

@@ -369,3 +369,17 @@ model FuturesPosition {
 
   @@index([userId, status])
 }
+
+// Listing metadata for on-chain IPO presales (FootballIPO). The chain stores
+// the token + amounts; this stores the human-facing name/club/etc. so new
+// admin-created offerings show up in the UI without a code change.
+model IpoSale {
+  id          String   @id @default(cuid())
+  saleId      Int      @unique // FootballIPO sale id
+  playerToken String
+  name        String
+  club        String
+  position    String   @default("FWD")
+  nat         String   @default("")
+  createdAt   DateTime @default(now())
+}

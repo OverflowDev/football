@@ -144,7 +144,13 @@ Listed** rows are off-chain listing metadata (`lib/ipo.ts`). Open sales with `np
 
 ### Adding a new IPO
 
-Two steps — open the sale on the **existing** contract (no redeploy), then register its metadata:
+**Easiest — in the app:** connect the **deployer wallet** (`NEXT_PUBLIC_ADMIN_ADDRESS`) and an
+**Admin · Create IPO** panel appears at the top of `/ipo`. Fill in the player, hit *Deploy & open
+sale* — it signs 4 txs from your wallet (deploy share token → mint → approve → `createSale`) and
+saves the listing to the `IpoSale` table. No code change, no redeploy. The panel is invisible to
+everyone else, and the persist route re-checks the session against the admin address.
+
+**Or via CLI** — open the sale on the **existing** contract, then register its metadata:
 
 ```bash
 # 1. open a sale on the existing FootballIPO
