@@ -153,6 +153,34 @@ function resilient(): MarketDataProvider {
   };
 }
 
+/**
+ * Overlay listed IPO tokens (FootballMarket.listExternalToken) as tradable
+ * players, so claimed IPO offerings appear in the spot market grid + pages.
+ */
+function withIpoListings(base: MarketDataProvider): MarketDataProvider {
+  // imported lazily to avoid a cycle (ipo-listings → onchain → …)
+  const ipo = () => import("@/lib/ipo-listings").then((m) => m.getListedIpoPlayers());
+  return {
+    async getPlayers() {
+      const [players, listed] = await Promise.all([base.getPlayers(), ipo().catch(() => [])]);
+      const slugs = new Set(players.map((p) => p.slug));
+      return [...listed.filter((p) => !slugs.has(p.slug)), ...players];
+    },
+    async getPlayerById(id) {
+      const found = await base.getPlayerById(id);
+      if (found) return found;
+      const listed = await ipo().catch(() => []);
+      return listed.find((p) => p.id === id) ?? null;
+    },
+    async getPlayerBySlug(slug) {
+      const found = await base.getPlayerBySlug(slug);
+      if (found) return found;
+      const listed = await ipo().catch(() => []);
+      return listed.find((p) => p.slug === slug) ?? null;
+    },
+  };
+}
+
 /** The active provider: resilient Prisma when a DB is configured, else demo. */
-export const marketData: MarketDataProvider = hasDatabase ? resilient() : demoProvider;
+export const marketData: MarketDataProvider = withIpoListings(hasDatabase ? resilient() : demoProvider);
 export { demoProvider, prismaProvider };

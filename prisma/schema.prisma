@@ -381,5 +381,7 @@ model IpoSale {
   club        String
   position    String   @default("FWD")
   nat         String   @default("")
+  listed      Boolean  @default(false) // listed on the spot market?
+  listedPrice Float? // USDC per share at listing
   createdAt   DateTime @default(now())
 }

@@ -39,7 +39,7 @@ function hashString(str: string): number {
   return h >>> 0;
 }
 
-function slugify(name: string): string {
+export function slugify(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")

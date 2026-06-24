@@ -253,7 +253,20 @@ function OnChainLiveCard({ ipo }: { ipo: IpoListing }) {
             variant="secondary"
             className="mt-2"
             loading={listing}
-            onClick={() => listOnMarket(ipo.playerToken!, Number(listPriceStr) || 0, Number(listQtyStr) || 0)}
+            onClick={() =>
+              listOnMarket(
+                {
+                  saleId,
+                  playerToken: ipo.playerToken!,
+                  name: ipo.name,
+                  club: ipo.club ?? "",
+                  position: ipo.position,
+                  nat: ipo.nationalityCode ?? "",
+                },
+                Number(listPriceStr) || 0,
+                Number(listQtyStr) || 0
+              )
+            }
           >
             Mint inventory & list for spot trading
           </Button>

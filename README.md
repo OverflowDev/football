@@ -188,8 +188,11 @@ In `contracts/`:
 - **`FootballFutures.sol`** — leveraged long/short on player prices: USDC margin, 1–10×, P&L,
   `closePosition`, `liquidate()`. Reads mark prices from `FootballMarket`.
 - **`FootballIPO.sol`** — on-chain presale: `createSale` (pool of tokens) → `deposit` USDC →
-  clearing price = raised ÷ pool → `finalize` → pro-rata `claim`. Claimed tokens become
-  spot-tradable via `FootballMarket.listExternalToken` (admin lists + seeds inventory).
+  clearing price = raised ÷ pool → `finalize` → pro-rata `claim`. Once finalized, the admin
+  **lists the token on the spot market** (`FootballMarket.listExternalToken`, mints + seeds
+  inventory). Listing flags the `IpoSale` row, and the token is then **surfaced as a tradable
+  player** in the `/market` grid + player page (synthesized in `lib/ipo-listings.ts`, live price
+  read from the market) — closing the loop from IPO → claim → spot trading.
 - **`PriceOracle.sol`** — auxiliary on-chain price feed (`ORACLE_ROLE`).
 - **`MockUSDC.sol`** — 6-decimal faucet token (local/Base-Sepolia only; **not** Arc).
 
