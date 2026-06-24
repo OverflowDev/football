@@ -20,7 +20,8 @@ export type League =
   | "La Liga"
   | "Serie A"
   | "Bundesliga"
-  | "Ligue 1";
+  | "Ligue 1"
+  | "IPO";
 
 export interface Club {
   id: string;

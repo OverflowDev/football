@@ -44,7 +44,7 @@ function toPlayer(row: ListedRow, price: number): Player {
       name: row.club || "—",
       shortName: row.club || "—",
       logo: "",
-      league: "Premier League",
+      league: "IPO",
       country: "",
     },
     currentPrice: price,

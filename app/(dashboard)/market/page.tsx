@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { MarketStats as MarketStatsType, Player, Position } from "@/types";
 
 const POSITIONS: (Position | "ALL")[] = ["ALL", "GK", "DEF", "MID", "FWD"];
-const LEAGUES = ["All", "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"];
+const LEAGUES = ["All", "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1", "IPO"];
 const SHOWS = ["All", "Gainers", "Losers", "Most Traded"] as const;
 
 export default function MarketPage() {
